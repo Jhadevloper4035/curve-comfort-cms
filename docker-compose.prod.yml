@@ -1,0 +1,44 @@
+name: curve_comfort-prod
+
+services:
+
+  # ── Backend ──────────────────────────────────────────────────────────────────
+  backend:
+    container_name: curve_comfort-backend
+    image: ${BACKEND_IMAGE:-curve_comfort-backend:latest}
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: production
+    restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    env_file:
+      - ./backend/.env.production
+    environment:
+      NODE_ENV: production
+    expose:
+      - "8000"
+    networks:
+      - curve_comfort-net
+
+
+  frontend:
+    container_name: curve_comfort-frontend
+    image: ${FRONTEND_IMAGE:-curve_comfort-frontend:latest}
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3001:8080"
+    networks:
+      - curve_comfort-net
+
+networks:
+  curve_comfort-net:
+    driver: bridge

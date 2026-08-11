@@ -1,0 +1,74 @@
+name: curve_comfort-dev
+
+services:
+
+  # ── MongoDB ──────────────────────────────────────────────────────────────────
+  mongo:
+    container_name: curve_comfort-mongo-dev
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - curve_comfort-mongo-dev-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - curve_comfort-dev-net
+
+  # ── Backend ──────────────────────────────────────────────────────────────────
+  backend:
+    container_name: curve_comfort-backend-dev
+    build:
+      context: ./backend
+      target: development
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env.development
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: "mongodb://mongo:27017"
+      DBNAME: curve_comfort-dev
+      ALLOWED_ORIGINS: "http://localhost:5173"
+      DEV_ADMIN_NAME: "admin"
+      DEV_ADMIN_PASSWORD: "admin12345"
+    ports:
+      - "8000:8000"               # exposed to host for direct API access / debugging
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/seed.js:/app/seed.js:ro
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - curve_comfort-dev-net
+
+  # ── Frontend ─────────────────────────────────────────────────────────────────
+  frontend:
+    container_name: curve_comfort-frontend-dev
+    build:
+      context: ./frontend
+      target: development
+    restart: unless-stopped
+    env_file:
+      - ./frontend/.env
+    environment:
+      # Empty so browser requests go to /api/... and Vite proxy forwards them
+      # to http://backend:8000 over the internal Docker network
+      VITE_API_BASE_URL: ""
+    ports:
+      - "5173:5173"               # Vite dev server
+    volumes:
+      - ./frontend/src:/app/src   # live HMR
+    depends_on:
+      - backend
+    networks:
+      - curve_comfort-dev-net
+
+networks:
+  curve_comfort-dev-net:
+    driver: bridge
+
+volumes:
+  curve_comfort-mongo-dev-data:

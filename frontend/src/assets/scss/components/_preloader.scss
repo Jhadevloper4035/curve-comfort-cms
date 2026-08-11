@@ -1,0 +1,51 @@
+.app-preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $body-bg;
+}
+
+.app-preloader-content {
+  width: min(220px, 70vw);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.app-preloader-logo {
+  width: 180px;
+  max-width: 100%;
+  height: auto;
+}
+
+.preloader-progress-bar {
+  background: rgba($primary, 0.12);
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+
+  .progress-value {
+    animation: load 900ms ease-in-out infinite;
+    border-radius: inherit;
+    background: $primary;
+    height: 100%;
+    width: 45%;
+  }
+}
+
+@keyframes load {
+  0% {
+    transform: translateX(-120%);
+  }
+
+  100% {
+    transform: translateX(240%);
+  }
+}
