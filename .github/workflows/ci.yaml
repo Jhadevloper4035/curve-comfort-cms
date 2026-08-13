@@ -191,7 +191,14 @@ jobs:
             # 4. Start fresh containers from pulled images — no rebuild on EC2
             BACKEND_IMAGE=$BACKEND_IMAGE FRONTEND_IMAGE=$FRONTEND_IMAGE docker compose -f docker-compose.prod.yml up -d --no-build
 
-            # 5. Clean up dangling images to free disk space
+            # 5. Send the EC2 Nginx default site to the container edge proxy.
+            sudo install -m 644 nginx/host.conf /etc/nginx/sites-available/curve-comfort
+            sudo ln -sfn /etc/nginx/sites-available/curve-comfort /etc/nginx/sites-enabled/curve-comfort
+            sudo rm -f /etc/nginx/sites-enabled/default
+            sudo nginx -t
+            sudo systemctl reload nginx
+
+            # 6. Clean up dangling images to free disk space
             docker image prune -f
 
             # FIX 3: Smoke test — fail the pipeline if containers are unhealthy
