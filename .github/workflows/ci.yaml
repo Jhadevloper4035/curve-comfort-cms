@@ -146,10 +146,20 @@ jobs:
           envs: DOCKERHUB_USERNAME,DOCKERHUB_TOKEN,BACKEND_IMAGE,FRONTEND_IMAGE,DATABASE_URL,DBNAME,JWT_SECRET,ALLOWED_ORIGINS,API_ENDPOINT,ADMIN_SECRET,AWS_ACCESS_KEY_ID,AWS_SECRET_ACCESS_KEY,AWS_REGION,S3_BUCKET,S3_PUBLIC_BASE_URL
           script: |
             set -e
-            cd /opt/admindashboard
+            APP_DIR=/opt/admindashboard
+            REPOSITORY=https://github.com/Jhadevloper4035/curve-comfort-cms.git
 
-            # 1. Pull latest code (picks up any docker-compose.prod.yml changes)
-            git pull origin main
+            # 1. Create the checkout on a new server; otherwise update it.
+            if [ ! -d "$APP_DIR/.git" ]; then
+              mkdir -p "$APP_DIR"
+              git -C "$APP_DIR" init
+              git -C "$APP_DIR" remote add origin "$REPOSITORY"
+              git -C "$APP_DIR" fetch --depth=1 origin main
+              git -C "$APP_DIR" checkout -B main FETCH_HEAD
+            else
+              git -C "$APP_DIR" pull --ff-only origin main
+            fi
+            cd "$APP_DIR"
 
             # 2. Write backend runtime .env from CI-injected secrets
             #    (never stored in repo, written fresh on every deploy)
