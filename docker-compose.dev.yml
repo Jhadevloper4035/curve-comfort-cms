@@ -31,8 +31,10 @@ services:
       DATABASE_URL: "mongodb://mongo:27017"
       DBNAME: curve_comfort-dev
       ALLOWED_ORIGINS: "http://localhost:5173"
-      DEV_ADMIN_NAME: "admin"
-      DEV_ADMIN_PASSWORD: "admin12345"
+      DEV_ADMIN_NAME: "Development Admin"
+      DEV_ADMIN_EMAIL: "admin@curve-comfort.test"
+      DEV_ADMIN_MOBILE: "0000000000"
+      DEV_ADMIN_PASSWORD: "ChangeMeBeforeProduction!2026"
     ports:
       - "8000:8000"               # exposed to host for direct API access / debugging
     volumes:

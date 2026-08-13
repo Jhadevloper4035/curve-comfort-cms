@@ -12,7 +12,7 @@ variable "cors_origins" {
   type    = list(string)
   default = ["http://localhost:5173"]
 }
-
+ 
 provider "aws" {
   region = var.aws_region
 }
