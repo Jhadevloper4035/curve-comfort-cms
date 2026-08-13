@@ -197,9 +197,9 @@ jobs:
             # FIX 3: Smoke test — fail the pipeline if containers are unhealthy
             #         Gives containers 5s to fully start before checking
             sleep 5
-            curl -sf http://localhost/api/health | grep -q '"server":"ok"' \
+            curl -sf http://localhost:3001/api/health | grep -q '"server":"ok"' \
               || (echo "FAILED: Backend health check" && exit 1)
-            curl -sf http://localhost | grep -q "<html" \
+            curl -sf http://localhost:3001 | grep -q "<html" \
               || (echo "FAILED: Frontend health check" && exit 1)
 
             echo "Deploy successful"
