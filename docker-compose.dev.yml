@@ -2,21 +2,6 @@ name: curve_comfort-dev
 
 services:
 
-  # ── MongoDB ──────────────────────────────────────────────────────────────────
-  mongo:
-    container_name: curve_comfort-mongo-dev
-    image: mongo:7
-    restart: unless-stopped
-    volumes:
-      - curve_comfort-mongo-dev-data:/data/db
-    healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - curve_comfort-dev-net
-
   # ── Backend ──────────────────────────────────────────────────────────────────
   backend:
     container_name: curve_comfort-backend-dev
@@ -24,12 +9,13 @@ services:
       context: ./backend
       target: development
     restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     env_file:
       - ./backend/.env.development
     environment:
       NODE_ENV: development
-      DATABASE_URL: "mongodb://mongo:27017"
-      DBNAME: curve_comfort-dev
       ALLOWED_ORIGINS: "http://localhost:5173"
       DEV_ADMIN_NAME: "Development Admin"
       DEV_ADMIN_EMAIL: "admin@curve-comfort.test"
@@ -40,9 +26,6 @@ services:
     volumes:
       - ./backend/src:/app/src
       - ./backend/seed.js:/app/seed.js:ro
-    depends_on:
-      mongo:
-        condition: service_healthy
     networks:
       - curve_comfort-dev-net
 
@@ -71,6 +54,3 @@ services:
 networks:
   curve_comfort-dev-net:
     driver: bridge
-
-volumes:
-  curve_comfort-mongo-dev-data:
