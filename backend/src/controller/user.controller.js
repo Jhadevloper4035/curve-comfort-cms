@@ -1,4 +1,5 @@
 const User = require("../model/user.model.js");
+const mongoose = require("mongoose");
 const { generateToken } = require("../middleware/jwt.js");
 const { createActivity } = require("../utils/activityLogger.js");
 
@@ -38,6 +39,12 @@ function cookieOptions() {
 const cleanEmail = (email = "") => email.trim().toLowerCase();
 const cleanRole = (role = "user") => (role === "admin" ? "admin" : "user");
 const publicSelect = "-password -emailOtpHash -refreshTokens -passwordResetTokenHash";
+
+const revokeStorefrontSessions = (userId) =>
+  mongoose.connection.collection("sessions").updateMany(
+    { userId, isRevoked: false },
+    { $set: { isRevoked: true, revokedAt: new Date() } }
+  );
 
 exports.register = async (req, res) => {
   const {
@@ -149,6 +156,14 @@ exports.login = async (req, res) => {
       });
     }
 
+    if (user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        status: "forbidden",
+        message: "Dashboard access is limited to admin accounts.",
+      });
+    }
+
     const token = generateToken(user._id);
     res.cookie("token", token, cookieOptions());
     req.user = user;
@@ -233,7 +248,9 @@ exports.changePassword = async (req, res) => {
     }
 
     user.password = newPassword;
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
     await user.save();
+    await revokeStorefrontSessions(user._id);
 
     await logUserActivity(req, {
       title: "Password Changed",
@@ -289,10 +306,15 @@ exports.updateUser = async (req, res) => {
     if (email) user.email = cleanEmail(email);
     if (mobileNumber) user.mobileNumber = mobileNumber;
     if (role) user.role = cleanRole(role);
-    if (isBlocked !== undefined) user.isBlocked = Boolean(isBlocked);
-    if (password) user.password = password;
+    const isBlocking = isBlocked === true || isBlocked === "true";
+    if (isBlocked !== undefined) user.isBlocked = isBlocking;
+    if (password) {
+      user.password = password;
+      user.tokenVersion = (user.tokenVersion || 0) + 1;
+    }
 
     await user.save();
+    if (password || isBlocking) await revokeStorefrontSessions(user._id);
     const targetName = targetUserName(user);
 
     await logUserActivity(req, {

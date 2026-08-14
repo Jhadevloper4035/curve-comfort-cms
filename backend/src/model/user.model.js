@@ -22,6 +22,10 @@ const userSchema = new mongoose.Schema(
     role: { type: String, enum: ROLES, default: "user" },
     isEmailVerified: { type: Boolean, default: false },
     isBlocked: { type: Boolean, default: false },
+    // Shared with the storefront authentication service.
+    failedLoginAttempts: { type: Number, default: 0 },
+    lockedUntil: { type: Date, default: null },
+    tokenVersion: { type: Number, default: 0 },
 
     emailOtpHash: { type: String, default: null },
     emailOtpExpiresAt: { type: Date, default: null },

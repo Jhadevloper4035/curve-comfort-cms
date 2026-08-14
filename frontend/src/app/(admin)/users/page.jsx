@@ -159,6 +159,11 @@ const UsersPage = () => {
       cell: ({ getValue }) => getValue() ? <span className="badge bg-danger">Blocked</span> : <span className="badge bg-success">Active</span>,
     },
     {
+      accessorKey: 'isEmailVerified',
+      header: 'Email',
+      cell: ({ getValue }) => getValue() ? <span className="badge bg-success">Verified</span> : <span className="badge bg-warning text-dark">Pending</span>,
+    },
+    {
       accessorKey: 'createdAt',
       header: 'Created',
       cell: ({ getValue }) => new Date(getValue()).toLocaleDateString(),
