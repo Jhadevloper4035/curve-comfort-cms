@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Button, Card, Form, InputGroup, Modal, Pagination } from 'react-bootstrap'
+import { Link } from 'react-router-dom'
 import { useReactTable, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, flexRender } from '@tanstack/react-table'
 import PageBreadcrumb from '@/components/layout/PageBreadcrumb'
 import PageMetaData from '@/components/PageTitle'
@@ -174,6 +175,10 @@ const UsersPage = () => {
       enableSorting: false,
       cell: ({ row }) => (
         <div className="d-flex gap-2">
+          <Link to={`/users/${row.original._id || row.original.id}`} className="btn btn-sm btn-soft-secondary">
+            <IconifyIcon icon="bx:show" className="me-1 fs-16" />
+            View details
+          </Link>
           <Button variant="soft-primary" size="sm" onClick={() => setEditTarget(row.original)}>
             <IconifyIcon icon="bx:edit" className="fs-16" />
           </Button>

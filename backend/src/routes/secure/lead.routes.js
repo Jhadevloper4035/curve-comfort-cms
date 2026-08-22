@@ -16,9 +16,7 @@ const {
   createEnquiry,
   updateEnquiry,
   deleteEnquiry,
-  getProductEnquiries,
   downloadWebsiteEnquiries,
-  downloadProductEnquiries,
 } = require("../../controller/lead.controller.js");
 
 const { validateEventForm, validateShowroomForm, validateDubaiwoodForm } = require("../../middleware/lead.validation.js");
@@ -30,15 +28,13 @@ const allLeadsAccess = [
     "eventLeads.view",
     "dubaiwoodLeads.view",
     "showroomLeads.manage",
-    "websiteLeads.manage",
-    "productEnquiries.view"
+    "websiteLeads.manage"
   ),
 ];
 const eventLeadsAccess = [protect, requirePermission("eventLeads.view")];
 const showroomLeadsAccess = [protect, requirePermission("showroomLeads.manage")];
 const dubaiwoodLeadsAccess = [protect, requirePermission("dubaiwoodLeads.view")];
 const websiteLeadsAccess = [protect, requirePermission("websiteLeads.manage")];
-const productEnquiryAccess = [protect, requirePermission("productEnquiries.view")];
 
 // ── Public routes (website form submissions — no auth) ────────────────────────
 router.post("/event/contact-form-submit/:place", validateEventForm, submitFormEvent);
@@ -64,7 +60,5 @@ router.put("/contactleads/:id", websiteLeadsAccess, updateEnquiry);
 router.delete("/contactleads/:id", websiteLeadsAccess, deleteEnquiry);
 router.get("/website/download", websiteLeadsAccess, downloadWebsiteEnquiries);
 
-router.get("/productEnquiry", productEnquiryAccess, getProductEnquiries);
-router.get("/product-enquiry/download", productEnquiryAccess, downloadProductEnquiries);
 
 module.exports = router;

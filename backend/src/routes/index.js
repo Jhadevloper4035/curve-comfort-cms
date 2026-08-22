@@ -6,9 +6,11 @@ const categoryAdminRoute = require("./secure/category.route.js");
 const landingPageAdminRoute = require("./secure/landing-page.route.js");
 const blogAdminRoute = require("./secure/blog.route.js");
 const seoMetaAdminRoute = require("./secure/seo-meta.route.js");
-const jobAdminRoute = require("./secure/job.route.js");
 const newsletterRoute = require("./secure/newsletter.route.js");
 const activityRoute = require("./secure/activity.route.js");
+const commerceAdminRoute = require("./commerce-admin.route.js");
+const commerceOrderRoute = require("./commerce-order.route.js");
+const commerceCouponRoute = require("./commerce-coupon.route.js");
 
 const leadAdminRoute = require("./secure/lead.routes.js");
 const authAdminRoute = require("./auth.routes.js");
@@ -25,8 +27,7 @@ const uploadAccess = [
     "products.manage",
     "blogs.manage",
     "seoMeta.manage",
-    "landingPage.manage",
-    "jobs.manage"
+    "landingPage.manage"
   ),
 ];
 
@@ -40,6 +41,9 @@ router.use("/lead", leadAdminRoute);
 router.use("/leads", leadAdminRoute);
 router.use("/newsletter", newsletterRoute);
 router.use("/activity-stream", activityRoute);
+router.use("/admin", commerceAdminRoute);
+router.use("/orders", commerceOrderRoute);
+router.use("/coupons", commerceCouponRoute);
 
 // Protected routes — admin or superadmin only
 router.use("/upload", uploadAccess, uploadRoute);
@@ -48,6 +52,5 @@ router.use("/blog", protect, requirePermission("blogs.manage"), blogAdminRoute);
 router.use("/product", protect, requirePermission("products.manage"), productAdminRoute);
 router.use("/category", protect, requirePermission("products.manage"), categoryAdminRoute);
 router.use("/landing-page", protect, requirePermission("landingPage.manage"), landingPageAdminRoute);
-router.use("/jobs", protect, requirePermission("jobs.manage"), jobAdminRoute);
 
 module.exports = router;

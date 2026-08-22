@@ -1,6 +1,6 @@
 import { EVENT_LEADS } from '@/constants/eventLeads';
 
-export const ACCESS_TYPES = ['superadmin', 'admin', 'custom', 'website', 'event', 'showroom', 'sales', 'jobs', 'seo'];
+export const ACCESS_TYPES = ['superadmin', 'admin', 'custom', 'website', 'event', 'showroom', 'sales', 'seo'];
 
 export const SERVICE_PERMISSIONS = [
   { value: 'dashboard.view', label: 'Dashboard' },
@@ -11,8 +11,6 @@ export const SERVICE_PERMISSIONS = [
   { value: 'landingPage.manage', label: 'Landing Page' },
   { value: 'websiteLeads.manage', label: 'Website Leads' },
   { value: 'newsletterSubscribers.view', label: 'Newsletters' },
-  { value: 'productEnquiries.view', label: 'Product Enquiries' },
-  { value: 'jobs.manage', label: 'Job Posts' },
   { value: 'eventLeads.view', label: 'Events Enquiry' },
   { value: 'dubaiwoodLeads.view', label: 'Dubaiwood Show Enquiry' },
   { value: 'showroomLeads.manage', label: 'Showroom Enquiry' },
@@ -21,11 +19,10 @@ export const SERVICE_PERMISSIONS = [
 const ROLE_PERMISSIONS = {
   superadmin: ['*'],
   admin: ['*'],
-  website: ['dashboard.view', 'websiteLeads.manage', 'newsletterSubscribers.view', 'productEnquiries.view', 'landingPage.manage'],
-  sales: ['dashboard.view', 'websiteLeads.manage', 'newsletterSubscribers.view', 'productEnquiries.view'],
+  website: ['dashboard.view', 'websiteLeads.manage', 'newsletterSubscribers.view', 'landingPage.manage'],
+  sales: ['dashboard.view', 'websiteLeads.manage', 'newsletterSubscribers.view'],
   event: ['dashboard.view', 'eventLeads.view', 'dubaiwoodLeads.view', 'showroomLeads.manage'],
   showroom: ['dashboard.view', 'showroomLeads.manage'],
-  jobs: ['jobs.manage'],
   seo: ['seoMeta.manage'],
   custom: [],
 };
@@ -43,10 +40,8 @@ export const hasAnyPermission = (user, permissions = []) =>
 
 export const getDefaultPathForUser = (user) => {
   if (hasPermission(user, 'dashboard.view')) return '/dashboard';
-  if (hasPermission(user, 'jobs.manage')) return '/jobs';
   if (hasPermission(user, 'websiteLeads.manage')) return '/pages/website-leads';
   if (hasPermission(user, 'newsletterSubscribers.view')) return '/pages/newsletters';
-  if (hasPermission(user, 'productEnquiries.view')) return '/pages/product-enquiries';
   if (hasPermission(user, 'eventLeads.view')) return `/pages/event-leads/${encodeURIComponent(EVENT_LEADS[0].value)}`;
   if (hasPermission(user, 'dubaiwoodLeads.view')) return '/pages/dubaiwood-leads';
   if (hasPermission(user, 'showroomLeads.manage')) return '/showroom-leads';

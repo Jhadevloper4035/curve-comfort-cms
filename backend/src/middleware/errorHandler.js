@@ -8,7 +8,7 @@ function notFound(req, res, next) {
 // Central error handler — always JSON (React frontend handles UI)
 // eslint-disable-next-line no-unused-vars
 function errorHandler(err, req, res, next) {
-  const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+  const statusCode = err.statusCode || (res.statusCode === 200 ? 500 : res.statusCode);
   const isDev = process.env.NODE_ENV !== "production";
 
   return res.status(statusCode).json({

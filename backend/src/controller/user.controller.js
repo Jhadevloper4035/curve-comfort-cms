@@ -1,7 +1,9 @@
 const User = require("../model/user.model.js");
+const Order = require("../model/order.model.js");
 const mongoose = require("mongoose");
 const { generateToken } = require("../middleware/jwt.js");
 const { createActivity } = require("../utils/activityLogger.js");
+const { hasValidSetupAdminCode } = require("../utils/setupAdmin.js");
 
 const userPayload = (user) => ({
   id: user._id,
@@ -122,6 +124,55 @@ exports.register = async (req, res) => {
       status: "error",
       message: "Registration failed. Please try again.",
     });
+  }
+};
+
+exports.setupAdmin = async (req, res) => {
+  const { fullName, email, mobileNumber, password, setupCode } = req.body;
+
+  if (!process.env.ADMIN_SETUP_CODE) {
+    return res.status(503).json({ success: false, message: "Admin setup is not configured." });
+  }
+
+  if (!hasValidSetupAdminCode(setupCode)) {
+    return res.status(403).json({ success: false, message: "Invalid setup code." });
+  }
+
+  if (!fullName || !email || !mobileNumber || !password || password.length < 8) {
+    return res.status(400).json({
+      success: false,
+      message: "Full name, email, mobile number, and a password of at least 8 characters are required.",
+    });
+  }
+
+  try {
+    const normalizedEmail = cleanEmail(email);
+    if (await User.findOne({ email: normalizedEmail })) {
+      return res.status(400).json({ success: false, message: "User already exists." });
+    }
+
+    const user = await User.create({ fullName, email: normalizedEmail, mobileNumber, password, role: "admin" });
+    const targetName = targetUserName(user);
+    await logUserActivity(req, {
+      title: "Admin Created",
+      description: `Setup created admin ${targetName}`,
+      action: "ADMIN_CREATED",
+      targetId: user._id,
+      targetName,
+      status: "completed",
+      badge: "Created",
+      iconType: "success",
+    });
+
+    return res.status(201).json({
+      success: true,
+      status: "admin_created",
+      message: "Admin created. You can now sign in.",
+      data: { user: userPayload(user) },
+    });
+  } catch (error) {
+    console.error("Admin setup error:", error);
+    return res.status(500).json({ success: false, message: "Failed to create admin." });
   }
 };
 
@@ -284,6 +335,31 @@ exports.listUsers = async (req, res) => {
   } catch (error) {
     console.error("List users error:", error);
     return res.status(500).json({ success: false, message: "Failed to fetch users." });
+  }
+};
+
+exports.getUserDetails = async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return res.status(404).json({ success: false, message: "User not found." });
+  }
+
+  try {
+    const [user, orders] = await Promise.all([
+      User.findById(req.params.id).select(publicSelect),
+      Order.find({ user: req.params.id })
+        .select("orderNumber items addressSnapshot pricing status paymentStatus paymentMethod createdAt")
+        .sort({ createdAt: -1 }),
+    ]);
+
+    if (!user) return res.status(404).json({ success: false, message: "User not found." });
+
+    return res.status(200).json({
+      success: true,
+      data: { user: userPayload(user), orders },
+    });
+  } catch (error) {
+    console.error("Get user details error:", error);
+    return res.status(500).json({ success: false, message: "Failed to fetch user details." });
   }
 };
 

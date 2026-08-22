@@ -2,10 +2,9 @@ import { useEffect } from 'react';
 import { Card, CardBody, Spinner } from 'react-bootstrap';
 import ReactApexChart from 'react-apexcharts';
 import useWebsiteLeadsStore    from '@/store/websiteLeadsStore';
-import useProductEnquiriesStore from '@/store/productEnquiriesStore';
 
 const STATUS_COLORS = {
-  // website / product
+  // website
   new:       '#727cf5',
   pending:   '#727cf5',
   contacted: '#39afd1',
@@ -79,21 +78,18 @@ const MiniChart = ({ title, leads, statusField = 'status', loading }) => {
 
 const LeadStatusCharts = () => {
   const { leads: webLeads,     loading: webLoading,  fetchLeads: fetchWeb  } = useWebsiteLeadsStore();
-  const { leads: prodLeads,    loading: prodLoading, fetchLeads: fetchProd } = useProductEnquiriesStore();
 
   useEffect(() => {
     fetchWeb();
-    fetchProd();
   }, []);
 
   return (
     <Card className="h-100">
       <CardBody>
         <h5 className="card-title mb-0">Status Breakdown</h5>
-        <p className="text-muted fs-13 mb-3">Current stage of each lead type</p>
+        <p className="text-muted fs-13 mb-3">Current stage of website enquiries</p>
 
-        <MiniChart title="Website Enquiries"  leads={webLeads}  loading={webLoading}  />
-        <MiniChart title="Product Enquiries"  leads={prodLeads} loading={prodLoading} />
+        <MiniChart title="Website Enquiries" leads={webLeads} loading={webLoading} />
       </CardBody>
     </Card>
   );

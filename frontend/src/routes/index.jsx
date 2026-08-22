@@ -12,6 +12,9 @@ const ThankYou = lazy(() => import('@/app/(public)/thank-you/page'))
 const Dashboard = lazy(() => import('@/app/(admin)/dashboard/analytics/page'))
 
 // Ecommerce Routes
+const OrderManagement = lazy(() => import('@/app/(admin)/ecommerce/orders/page'))
+const OrderDetails = lazy(() => import('@/app/(admin)/ecommerce/orders/[orderId]/page'))
+const CouponManagement = lazy(() => import('@/app/(admin)/ecommerce/coupons/page'))
 const EcommerceProductDetails = lazy(() => import('@/app/(admin)/ecommerce/products/[productId]/page'))
 const EcommerceProductCreate = lazy(() => import('@/app/(admin)/ecommerce/products/create/page'))
 const EcommerceProductEdit = lazy(() => import('@/app/(admin)/ecommerce/products/[productId]/edit/page'))
@@ -31,12 +34,6 @@ const BlogCreate = lazy(() => import('@/app/(admin)/blogs/create/page'))
 const BlogDetail = lazy(() => import('@/app/(admin)/blogs/[blogId]/page'))
 const BlogEdit = lazy(() => import('@/app/(admin)/blogs/[blogId]/edit/page'))
 
-// Job Routes
-const Jobs = lazy(() => import('@/app/(admin)/jobs/page'))
-const JobCreate = lazy(() => import('@/app/(admin)/jobs/create/page'))
-const JobDetail = lazy(() => import('@/app/(admin)/jobs/[jobId]/page'))
-const JobEdit = lazy(() => import('@/app/(admin)/jobs/[jobId]/edit/page'))
-
 // Leads Routes
 const ShowroomLeads = lazy(() => import('@/app/(admin)/showroom-leads/page'))
 const AddShowroomLead = lazy(() => import('@/app/(admin)/showroom-leads/add/page'))
@@ -44,10 +41,10 @@ const EventLeads = lazy(() => import('@/app/(admin)/pages/event-leads/page'))
 const DubaiwoodLeads = lazy(() => import('@/app/(admin)/pages/dubaiwood-leads/page'))
 const WebsiteLeads = lazy(() => import('@/app/(admin)/pages/website-leads/page'))
 const Newsletters = lazy(() => import('@/app/(admin)/pages/newsletters/page'))
-const ProductEnquiries = lazy(() => import('@/app/(admin)/pages/product-enquiries/page'))
 
 // User Management
 const UserManagement = lazy(() => import('@/app/(admin)/users/page'))
+const UserDetails = lazy(() => import('@/app/(admin)/users/[userId]/page'))
 const ChangePassword = lazy(() => import('@/app/(admin)/auth/change-password/page'))
 
 // Auth & Error Routes
@@ -70,12 +67,11 @@ const initialRoutes = [
 ]
 
 // All valid access types — used to gate entry into the admin layout
-export const ALL_ACCESS_TYPES = ['event', 'admin', 'showroom', 'website', 'superadmin', 'sales', 'jobs', 'seo', 'custom']
+export const ALL_ACCESS_TYPES = ['event', 'admin', 'showroom', 'website', 'superadmin', 'sales', 'seo', 'custom']
 
 // superadmin : all routes
 // admin      : all routes except user creation
-// website    : dashboard + website-related leads (website leads, product enquiries, job apps)
-// jobs       : job post CRUD
+// website    : dashboard + website-related leads
 // event      : dashboard + event leads + showroom leads
 
 const generalRoutes = [
@@ -94,6 +90,48 @@ const generalRoutes = [
 ]
 
 const appsRoutes = [
+  {
+    name: 'Order Details',
+    path: '/ecommerce/orders/:orderId',
+    element: <OrderDetails />,
+    roles: ['admin', 'superadmin'],
+    permissions: ['products.manage'],
+  },
+  {
+    name: 'Order Management',
+    path: '/ecommerce/orders',
+    element: <OrderManagement />,
+    roles: ['admin', 'superadmin'],
+    permissions: ['products.manage'],
+  },
+  {
+    name: 'Confirmed Paid Orders',
+    path: '/ecommerce/orders/confirmed',
+    element: <OrderManagement pageTitle="Confirmed Paid Orders" fixedFilters={{ status: 'confirmed', paymentStatus: 'paid' }} />,
+    roles: ['admin', 'superadmin'],
+    permissions: ['products.manage'],
+  },
+  {
+    name: 'Failed Orders',
+    path: '/ecommerce/orders/failed',
+    element: <OrderManagement pageTitle="Failed Orders" fixedFilters={{ view: 'failed' }} />,
+    roles: ['admin', 'superadmin'],
+    permissions: ['products.manage'],
+  },
+  {
+    name: 'Past Order Lookup',
+    path: '/ecommerce/orders/lookup',
+    element: <OrderManagement pageTitle="Past Order Lookup" lookupMode />,
+    roles: ['admin', 'superadmin'],
+    permissions: ['products.manage'],
+  },
+  {
+    name: 'Coupon Management',
+    path: '/ecommerce/coupons',
+    element: <CouponManagement />,
+    roles: ['admin', 'superadmin'],
+    permissions: ['products.manage'],
+  },
   {
     name: 'Product Details',
     path: '/ecommerce/products/:productId',
@@ -159,34 +197,6 @@ const customRoutes = [
     element: <BlogEdit />,
     roles: ['admin', 'superadmin', 'custom'],
     permissions: ['blogs.manage'],
-  },
-  {
-    name: 'Jobs',
-    path: '/jobs',
-    element: <Jobs />,
-    roles: ['admin', 'superadmin', 'jobs', 'custom'],
-    permissions: ['jobs.manage'],
-  },
-  {
-    name: 'Job Create',
-    path: '/jobs/create',
-    element: <JobCreate />,
-    roles: ['admin', 'superadmin', 'jobs', 'custom'],
-    permissions: ['jobs.manage'],
-  },
-  {
-    name: 'Job Detail',
-    path: '/jobs/:jobId',
-    element: <JobDetail />,
-    roles: ['admin', 'superadmin', 'jobs', 'custom'],
-    permissions: ['jobs.manage'],
-  },
-  {
-    name: 'Job Edit',
-    path: '/jobs/:jobId/edit',
-    element: <JobEdit />,
-    roles: ['admin', 'superadmin', 'jobs', 'custom'],
-    permissions: ['jobs.manage'],
   },
   {
     name: 'SEO Meta List',
@@ -259,13 +269,6 @@ const customRoutes = [
     permissions: ['newsletterSubscribers.view'],
   },
   {
-    name: 'Product Enquiries',
-    path: '/pages/product-enquiries',
-    element: <ProductEnquiries />,
-    roles: ['admin', 'superadmin', 'website', 'sales'],
-    permissions: ['productEnquiries.view'],
-  },
-  {
     name: 'Events Enquiry',
     path: '/pages/event-leads/:eventSlug',
     element: <EventLeads />,
@@ -282,6 +285,11 @@ const customRoutes = [
 ]
 
 export const authRoutes = [
+  {
+    path: '/auth/setup-admin',
+    name: 'Setup Admin',
+    element: <AuthSignUp />,
+  },
   {
     path: '/auth/sign-in',
     name: 'Sign In',
@@ -309,6 +317,13 @@ export const appRoutes = [
     name: 'User Management',
     path: '/users',
     element: <UserManagement />,
+    roles: ['admin', 'superadmin'],
+    permissions: ['users.manage'],
+  },
+  {
+    name: 'User Details',
+    path: '/users/:userId',
+    element: <UserDetails />,
     roles: ['admin', 'superadmin'],
     permissions: ['users.manage'],
   },

@@ -24,8 +24,8 @@ const SignUp = () => {
               }} squareLogo={{
                 className: 'me-1'
               }} containerClassName="mx-auto mb-4 text-center auth-logo" />
-                <h2 className="fw-bold text-center fs-18">Create User</h2>
-                <p className="text-muted text-center mt-1 mb-4">Create a new user account and assign their role.</p>
+                <h2 className="fw-bold text-center fs-18">Create Admin</h2>
+                <p className="text-muted text-center mt-1 mb-4">Enter the setup code to create an administrator account.</p>
                 <SignUpForm />
                 </div>
               </div>

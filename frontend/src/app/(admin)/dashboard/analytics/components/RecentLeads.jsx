@@ -1,13 +1,9 @@
 import { useEffect, useMemo } from 'react';
 import { Badge, Card, CardBody, Spinner, Table } from 'react-bootstrap';
-import useShowroomLeadsStore    from '@/store/showroomLeadsStore';
 import useWebsiteLeadsStore     from '@/store/websiteLeadsStore';
-import useProductEnquiriesStore from '@/store/productEnquiriesStore';
 
 const TYPE_META = {
-  showroom: { label: 'Showroom',  bg: 'info'    },
   website:  { label: 'Website',   bg: 'success'  },
-  product:  { label: 'Product',   bg: 'warning'  },
 };
 
 const STATUS_BG = {
@@ -22,28 +18,15 @@ const fmtDate = (d) => {
 };
 
 const RecentLeads = () => {
-  const { leads: showroomLeads, loading: sl, fetchLeads: fetchShowroom } = useShowroomLeadsStore();
   const { leads: webLeads,      loading: wl, fetchLeads: fetchWeb      } = useWebsiteLeadsStore();
-  const { leads: prodLeads,     loading: pl, fetchLeads: fetchProd     } = useProductEnquiriesStore();
-
-  const loading = sl || wl || pl;
+  const loading = wl;
 
   useEffect(() => {
-    fetchShowroom();
     fetchWeb();
-    fetchProd();
   }, []);
 
   const combined = useMemo(() => {
     const rows = [
-      ...showroomLeads.map(l => ({
-        type:    'showroom',
-        name:    l.fullName || l.name || '—',
-        contact: l.mobileNumber || l.phone || '—',
-        detail:  l.city || l.place || '—',
-        status:  l.leadType || 'showroom',
-        date:    l.createdAt,
-      })),
       ...webLeads.map(l => ({
         type:    'website',
         name:    l.name   || '—',
@@ -52,26 +35,18 @@ const RecentLeads = () => {
         status:  l.status || 'new',
         date:    l.createdAt,
       })),
-      ...prodLeads.map(l => ({
-        type:    'product',
-        name:    l.fullName || '—',
-        contact: l.phone    || l.email || '—',
-        detail:  l.productInterest || '—',
-        status:  l.status || 'pending',
-        date:    l.createdAt,
-      })),
     ];
 
     return rows
       .sort((a, b) => new Date(b.date) - new Date(a.date))
       .slice(0, 15);
-  }, [showroomLeads, webLeads, prodLeads]);
+  }, [webLeads]);
 
   return (
     <Card className="h-100">
       <CardBody>
         <h5 className="card-title mb-0">Recent Activity</h5>
-        <p className="text-muted fs-13 mb-3">Latest 15 entries across all lead types</p>
+        <p className="text-muted fs-13 mb-3">Latest 15 website enquiries</p>
 
         {loading && combined.length === 0 ? (
           <div className="d-flex justify-content-center py-4">

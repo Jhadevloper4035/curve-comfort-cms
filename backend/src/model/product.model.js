@@ -93,6 +93,7 @@ const productSchema = new mongoose.Schema(
             maxlength: 2000,
         },
         basePrice: { type: Number, required: true, min: 0 },
+        gstPercent: { type: Number, default: 18, min: 0, max: 100 },
         currency: {
             type: String,
             default: "INR",

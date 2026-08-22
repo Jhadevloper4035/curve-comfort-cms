@@ -43,7 +43,7 @@ const RecentOrders = () => {
           <tbody>
             {orders?.slice(0, 5).map((order, idx) => <tr key={idx}>
                 <td>
-                  <Link to={`/ecommerce/orders/${order.id}`}>{order.id}</Link>
+                  <Link to="/ecommerce/orders">{order.id}</Link>
                 </td>
                 <td>{new Date(order.createdAt).toDateString()}</td>
                 {order.product && <td>
