@@ -6,8 +6,37 @@ import PageMetaData from '@/components/PageTitle'
 import { apiFetch } from '@/helpers/httpClient'
 
 const money = (paise = 0) => `₹${(Number(paise || 0) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+const productPrice = (price = 0, currency = 'INR') => new Intl.NumberFormat('en-IN', { style: 'currency', currency }).format(Number(price || 0))
 const label = (value) => String(value || '—').replaceAll('_', ' ')
 const dateTime = (value) => value ? new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) : '—'
+const addressKey = (address) => JSON.stringify([address.fullName, address.line1, address.line2, address.landmark, address.city, address.state, address.postalCode, address.country, address.phone, address.alternatePhone].map((value) => String(value || '').trim().toLowerCase()))
+
+const CustomerProducts = ({ title, items, cart }) => (
+  <Card className="h-100">
+    <CardBody>
+      <h5 className="card-title mb-3">{title} ({items.length})</h5>
+      {items.length ? (
+        <div className="table-responsive">
+          <table className="table table-sm align-middle mb-0">
+            <thead className="table-light"><tr><th>Product</th>{cart && <th>Options</th>}<th>Price</th>{cart && <th>Quantity</th>}<th>Availability</th></tr></thead>
+            <tbody>
+              {items.map((item) => {
+                const product = cart ? item.product : item
+                return <tr key={item._id || product._id}>
+                  <td><Link to={`/ecommerce/products/${product._id}`} className="fw-medium">{product.title}</Link><div className="text-muted fs-12">/{product.slug}</div></td>
+                  {cart && <td className="text-muted">{item.selectedOptions?.map((option) => `${option.label || option.key}: ${option.value}`).join(', ') || '—'}</td>}
+                  <td>{productPrice(product.basePrice, product.currency)}</td>
+                  {cart && <td>{item.quantity}</td>}
+                  <td><Badge bg={product.inStock ? 'success' : 'secondary'}>{product.inStock ? 'In stock' : 'Out of stock'}</Badge></td>
+                </tr>
+              })}
+            </tbody>
+          </table>
+        </div>
+      ) : <p className="text-muted mb-0">No {cart ? 'items in the cart' : 'saved wishlist items'}.</p>}
+    </CardBody>
+  </Card>
+)
 
 export default function UserDetails() {
   const { userId } = useParams()
@@ -28,7 +57,15 @@ export default function UserDetails() {
 
   if (!details) return <div className="text-center py-5"><Spinner /></div>
 
-  const { user, orders = [] } = details
+  const { user, orders = [], cartItems = [], wishlistItems = [] } = details
+  const seenAddresses = new Set()
+  const uniqueAddressOrders = orders.filter((order) => {
+    if (!order.addressSnapshot) return false
+    const key = addressKey(order.addressSnapshot)
+    if (seenAddresses.has(key)) return false
+    seenAddresses.add(key)
+    return true
+  })
 
   return (
     <>
@@ -65,8 +102,8 @@ export default function UserDetails() {
         <Col lg={7}>
           <Card className="h-100">
             <CardBody>
-              <h5 className="card-title mb-3">Delivery Addresses Used in Orders</h5>
-              {orders.filter((order) => order.addressSnapshot).map((order) => {
+              <h5 className="card-title mb-3">Delivery Addresses Used in Orders ({uniqueAddressOrders.length})</h5>
+              {uniqueAddressOrders.map((order) => {
                 const address = order.addressSnapshot
                 const lines = [address.line1, address.line2, address.landmark, [address.city, address.state, address.postalCode].filter(Boolean).join(', '), address.country].filter(Boolean)
                 return <div className="border-bottom pb-3 mb-3" key={order._id}>
@@ -75,10 +112,15 @@ export default function UserDetails() {
                   <div className="mt-1">Phone: {address.phone || '—'}{address.alternatePhone ? ` · Alternate: ${address.alternatePhone}` : ''}</div>
                 </div>
               })}
-              {!orders.some((order) => order.addressSnapshot) && <p className="text-muted mb-0">No delivery address is available yet.</p>}
+              {!uniqueAddressOrders.length && <p className="text-muted mb-0">No delivery address is available yet.</p>}
             </CardBody>
           </Card>
         </Col>
+      </Row>
+
+      <Row className="g-3 mb-3">
+        <Col lg={7}><CustomerProducts title="Current Cart" items={cartItems} cart /></Col>
+        <Col lg={5}><CustomerProducts title="Wishlist" items={wishlistItems} /></Col>
       </Row>
 
       <Card>

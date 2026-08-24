@@ -114,6 +114,18 @@ export const MENU_ITEMS = [
         url: '/blogs/create',
         parentKey: 'blogs',
       },
+      {
+        key: 'blogs-categories',
+        label: 'Categories',
+        url: '/blogs/categories',
+        parentKey: 'blogs',
+      },
+      {
+        key: 'blogs-tags',
+        label: 'Tags',
+        url: '/blogs/tags',
+        parentKey: 'blogs',
+      },
     ],
   },
   {

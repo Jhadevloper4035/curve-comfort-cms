@@ -8,6 +8,7 @@ const cors = require("cors");
 const { notFound, errorHandler } = require("./middleware/errorHandler.js");
 
 const routes = require("./routes/index.js");
+const storefrontRoutes = require("./routes/storefront.route.js");
 
 const app = express();
 
@@ -55,6 +56,7 @@ app.use(cookieParser());
 // ── Routes ────────────────────────────────────────────────────────────────────
 
 app.use("/api", routes);
+app.use("/api/v1", storefrontRoutes);
 
 // ── Error handling (must be last) ─────────────────────────────────────────────
 app.use(notFound);

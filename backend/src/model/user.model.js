@@ -36,6 +36,7 @@ const userSchema = new mongoose.Schema(
     lockedUntil: { type: Date, default: null },
     tokenVersion: { type: Number, default: 0 },
     cartItems: { type: [cartItemSchema], default: [] },
+    wishlistItems: { type: [{ type: mongoose.Schema.Types.ObjectId, ref: "Product" }], default: [] },
 
     emailOtpHash: { type: String, default: null },
     emailOtpExpiresAt: { type: Date, default: null },

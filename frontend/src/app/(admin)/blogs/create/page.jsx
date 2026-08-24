@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Card, CardBody, Col, Row } from 'react-bootstrap'
 import { useForm } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
@@ -12,6 +12,7 @@ import TextAreaFormInput from '@/components/form/TextAreaFormInput'
 import SelectFormInput from '@/components/form/SelectFormInput'
 import IconifyIcon from '@/components/wrappers/IconifyIcon'
 import useBlogStore from '@/store/blogStore'
+import useBlogTaxonomyStore from '@/store/blogTaxonomyStore'
 import ImageUploader from '@/components/ImageUploader'
 import SeoFieldsForm, { buildSeoPayload, getSeoDefaults } from '@/components/form/SeoFieldsForm'
 
@@ -36,8 +37,17 @@ const QUILL_MODULES = {
 const CreateBlog = () => {
   const navigate = useNavigate()
   const { createBlog } = useBlogStore()
+  const { items: taxonomyItems, fetchTaxonomies } = useBlogTaxonomyStore()
   const [content, setContent] = useState('')
   const [coverImage, setCoverImage] = useState('')
+
+  useEffect(() => {
+    fetchTaxonomies('category')
+    fetchTaxonomies('tag')
+  }, [fetchTaxonomies])
+
+  const categoryOptions = taxonomyItems.category.map((item) => ({ value: item.name, label: item.name }))
+  const tagOptions = taxonomyItems.tag.map((item) => ({ value: item.name, label: item.name }))
 
   const { control, handleSubmit } = useForm({
     defaultValues: {
@@ -45,6 +55,8 @@ const CreateBlog = () => {
       url: '',
       status: 'active',
       author: 'Admin',
+      category: '',
+      tags: [],
       meta_name: '',
       meta_tags: '',
       meta_title: '',
@@ -60,6 +72,8 @@ const CreateBlog = () => {
       text: content,
       status: values.status,
       author: values.author,
+      category: values.category || null,
+      tags: values.tags || [],
       meta_name: values.meta_name || '',
       meta_tags: values.meta_tags || '',
       meta_title: values.meta_title || '',
@@ -106,6 +120,29 @@ const CreateBlog = () => {
                   </Col>
                   <Col md={4}>
                     <TextFormInput control={control} name="author" label="Author" placeholder="Admin" containerClassName="mb-3" />
+                  </Col>
+                  <Col md={6}>
+                    <SelectFormInput
+                      control={control}
+                      name="category"
+                      label="Category"
+                      options={categoryOptions}
+                      placeholder="Select a category"
+                      isClearable
+                      containerClassName="mb-3"
+                    />
+                  </Col>
+                  <Col md={6}>
+                    <SelectFormInput
+                      control={control}
+                      name="tags"
+                      label="Tags"
+                      options={tagOptions}
+                      placeholder="Select one or more tags"
+                      isMulti
+                      closeMenuOnSelect={false}
+                      containerClassName="mb-3"
+                    />
                   </Col>
 
                   <Col md={12}>

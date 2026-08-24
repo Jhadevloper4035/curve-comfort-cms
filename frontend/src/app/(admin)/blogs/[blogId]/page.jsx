@@ -112,6 +112,8 @@ const BlogDetail = () => {
               <h5 className="fw-semibold mb-3">{blog.title}</h5>
               <Field label="URL Slug" value={`/${blog.url}`} />
               <Field label="Author" value={blog.author} />
+              <Field label="Category" value={blog.category} />
+              <Field label="Tags" value={(blog.tags || []).join(', ')} />
 
               <hr className="my-3" />
               <h6 className="text-muted mb-3">Content Preview</h6>

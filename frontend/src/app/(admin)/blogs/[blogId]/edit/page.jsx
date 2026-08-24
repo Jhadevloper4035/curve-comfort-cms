@@ -11,6 +11,7 @@ import TextAreaFormInput from '@/components/form/TextAreaFormInput';
 import SelectFormInput from '@/components/form/SelectFormInput';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import useBlogStore from '@/store/blogStore';
+import useBlogTaxonomyStore from '@/store/blogTaxonomyStore';
 import ImageUploader from '@/components/ImageUploader';
 import SeoFieldsForm, { buildSeoPayload, getSeoDefaults } from '@/components/form/SeoFieldsForm';
 
@@ -36,6 +37,7 @@ const EditBlog = () => {
   const { blogId } = useParams();
   const navigate = useNavigate();
   const { blogs, loading, fetchBlogs, updateBlog } = useBlogStore();
+  const { items: taxonomyItems, fetchTaxonomies } = useBlogTaxonomyStore();
   const [saving, setSaving] = useState(false);
   const [content, setContent] = useState('');
   const [coverImage, setCoverImage] = useState('');
@@ -46,7 +48,24 @@ const EditBlog = () => {
     fetchBlogs();
   }, [fetchBlogs]);
 
+  useEffect(() => {
+    fetchTaxonomies('category');
+    fetchTaxonomies('tag');
+  }, [fetchTaxonomies]);
+
   const blog = blogs.find((b) => b._id === blogId);
+  const categoryOptions = [
+    ...taxonomyItems.category.map((item) => ({ value: item.name, label: item.name })),
+    ...(blog?.category && !taxonomyItems.category.some((item) => item.name === blog.category)
+      ? [{ value: blog.category, label: blog.category }]
+      : []),
+  ];
+  const tagOptions = [
+    ...taxonomyItems.tag.map((item) => ({ value: item.name, label: item.name })),
+    ...(blog?.tags || [])
+      .filter((tag) => !taxonomyItems.tag.some((item) => item.name === tag))
+      .map((tag) => ({ value: tag, label: tag })),
+  ];
 
   useEffect(() => {
     if (blog) {
@@ -55,6 +74,8 @@ const EditBlog = () => {
         url:              blog.url              ?? '',
         status:           blog.status           ?? 'active',
         author:           blog.author           ?? 'Admin',
+        category:         blog.category         ?? '',
+        tags:             blog.tags || [],
         meta_name:        blog.meta_name        ?? '',
         meta_tags:        blog.meta_tags        ?? '',
         meta_title:       blog.meta_title       ?? '',
@@ -81,6 +102,8 @@ const EditBlog = () => {
       text:             content,
       status:           values.status,
       author:           values.author,
+      category:         values.category || null,
+      tags:             values.tags || [],
       meta_name:        values.meta_name        || null,
       meta_tags:        values.meta_tags        || null,
       meta_title:       values.meta_title       || null,
@@ -144,6 +167,29 @@ const EditBlog = () => {
                       name="author"
                       label="Author"
                       placeholder="Admin"
+                      containerClassName="mb-3"
+                    />
+                  </Col>
+                  <Col md={6}>
+                    <SelectFormInput
+                      control={control}
+                      name="category"
+                      label="Category"
+                      options={categoryOptions}
+                      placeholder="Select a category"
+                      isClearable
+                      containerClassName="mb-3"
+                    />
+                  </Col>
+                  <Col md={6}>
+                    <SelectFormInput
+                      control={control}
+                      name="tags"
+                      label="Tags"
+                      options={tagOptions}
+                      placeholder="Select one or more tags"
+                      isMulti
+                      closeMenuOnSelect={false}
                       containerClassName="mb-3"
                     />
                   </Col>

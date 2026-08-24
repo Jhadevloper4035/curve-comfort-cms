@@ -16,7 +16,7 @@ const WebsiteLeads = () => {
 
   const stats = useMemo(() => {
     const sourceCounts = leads.reduce((acc, lead) => {
-      const key = lead.enquiryType || 'Unknown'
+      const key = lead.subject || 'Unknown'
       acc[key] = (acc[key] || 0) + 1
       return acc
     }, {})
@@ -47,7 +47,7 @@ const WebsiteLeads = () => {
   const handleDownloadExcel = async () => {
     setDownloading(true)
     try {
-      await downloadExcel('/api/lead/website/download', 'Website-Enquiries.xlsx')
+      await downloadExcel('/api/lead/website/download', 'Contact-Enquiries.xlsx')
     } finally {
       setDownloading(false)
     }

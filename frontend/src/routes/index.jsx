@@ -33,6 +33,7 @@ const Blogs = lazy(() => import('@/app/(admin)/blogs/page'))
 const BlogCreate = lazy(() => import('@/app/(admin)/blogs/create/page'))
 const BlogDetail = lazy(() => import('@/app/(admin)/blogs/[blogId]/page'))
 const BlogEdit = lazy(() => import('@/app/(admin)/blogs/[blogId]/edit/page'))
+const BlogTaxonomy = lazy(() => import('@/app/(admin)/blogs/taxonomy/page'))
 
 // Leads Routes
 const ShowroomLeads = lazy(() => import('@/app/(admin)/showroom-leads/page'))
@@ -181,6 +182,20 @@ const customRoutes = [
     name: 'Blog Create',
     path: '/blogs/create',
     element: <BlogCreate />,
+    roles: ['admin', 'superadmin', 'custom'],
+    permissions: ['blogs.manage'],
+  },
+  {
+    name: 'Blog Categories',
+    path: '/blogs/categories',
+    element: <BlogTaxonomy type="category" />,
+    roles: ['admin', 'superadmin', 'custom'],
+    permissions: ['blogs.manage'],
+  },
+  {
+    name: 'Blog Tags',
+    path: '/blogs/tags',
+    element: <BlogTaxonomy type="tag" />,
     roles: ['admin', 'superadmin', 'custom'],
     permissions: ['blogs.manage'],
   },

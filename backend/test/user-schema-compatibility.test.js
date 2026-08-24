@@ -10,12 +10,14 @@ test("user schema includes storefront authentication fields", () => {
     mobileNumber: "1234567890",
   });
 
-  for (const field of ["failedLoginAttempts", "lockedUntil", "tokenVersion"]) {
+  for (const field of ["failedLoginAttempts", "lockedUntil", "tokenVersion", "cartItems", "wishlistItems"]) {
     assert.ok(User.schema.path(field));
   }
   assert.equal(user.failedLoginAttempts, 0);
   assert.equal(user.lockedUntil, null);
   assert.equal(user.tokenVersion, 0);
+  assert.deepEqual(user.cartItems, []);
+  assert.deepEqual(user.wishlistItems, []);
 });
 
 test("a shared storefront admin has dashboard access", () => {

@@ -4,13 +4,6 @@ import IconifyIcon from '@/components/wrappers/IconifyIcon'
 import useWebsiteLeadsStore from '@/store/websiteLeadsStore'
 import { useReactTable, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, flexRender } from '@tanstack/react-table'
 
-const statusVariant = {
-  new: 'soft-primary',
-  contacted: 'soft-warning',
-  converted: 'soft-success',
-  closed: 'soft-danger',
-}
-
 const WebsiteLeadsTable = () => {
   const { leads, loading, error } = useWebsiteLeadsStore()
   const [globalFilter, setGlobalFilter] = useState('')
@@ -28,18 +21,10 @@ const WebsiteLeadsTable = () => {
       },
       { accessorKey: 'name', header: 'Name', cell: ({ getValue }) => getValue() },
       { accessorKey: 'email', header: 'Email', cell: ({ getValue }) => getValue() },
-      { accessorKey: 'phone', header: 'Phone', cell: ({ getValue }) => getValue() },
-      { accessorKey: 'enquiryType', header: 'Enquiry Type', cell: ({ getValue }) => getValue() },
+      { accessorKey: 'mobileNumber', header: 'Phone', cell: ({ getValue }) => getValue() },
+      { accessorKey: 'subject', header: 'Subject', cell: ({ getValue }) => getValue() },
       {
-        accessorKey: 'products',
-        header: 'Products',
-        cell: ({ getValue }) => {
-          const val = getValue()
-          return Array.isArray(val) ? val.join(', ') : val
-        },
-      },
-      {
-        accessorKey: 'comments',
+        accessorKey: 'message',
         header: 'Query',
         cell: ({ getValue }) => {
           const text = getValue() || ''
@@ -55,28 +40,10 @@ const WebsiteLeadsTable = () => {
           )
         },
       },
-      { accessorKey: 'source', header: 'Source', cell: ({ getValue }) => getValue() },
       {
         accessorKey: 'createdAt',
         header: 'Date',
         cell: ({ getValue }) => getValue() ? new Date(getValue()).toLocaleDateString() : '-',
-      },
-      {
-        accessorKey: 'status',
-        header: 'Status',
-        cell: ({ getValue }) => (
-          <span className={`badge bg-${statusVariant[getValue()] ?? 'soft-secondary'}`}>{getValue() ?? 'new'}</span>
-        ),
-      },
-      {
-        id: 'actions',
-        header: 'Actions',
-        cell: () => (
-          <Button variant="soft-secondary" size="sm">
-            <IconifyIcon icon="bx:edit" className="fs-16" />
-          </Button>
-        ),
-        enableSorting: false,
       },
     ],
     []

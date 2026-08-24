@@ -1,4 +1,6 @@
 const Blog = require("../model/blog.model.js");
+const BlogTaxonomy = require("../model/blog-taxonomy.model.js");
+const mongoose = require("mongoose");
 const slugify = require("slugify");
 const { createActivity } = require("../utils/activityLogger.js");
 
@@ -9,6 +11,79 @@ const logBlogActivity = (req, payload) =>
     module: "blogs",
     ...payload,
   });
+
+const taxonomyTypes = ["category", "tag"];
+const isTaxonomyType = (type) => taxonomyTypes.includes(type);
+
+const blogUsageQuery = (type, name) =>
+  type === "category" ? { category: name } : { tags: name };
+
+exports.getBlogTaxonomies = async (req, res) => {
+  try {
+    const { type } = req.query;
+    if (!isTaxonomyType(type)) {
+      return res.status(400).json({ error: "Type must be category or tag." });
+    }
+
+    const taxonomies = await BlogTaxonomy.find({ type }).sort({ name: 1 }).lean();
+    const usage = await Promise.all(
+      taxonomies.map(async (taxonomy) => ({
+        ...taxonomy,
+        blogCount: await Blog.countDocuments(blogUsageQuery(type, taxonomy.name)),
+      }))
+    );
+
+    res.json({ status: "success", data: usage });
+  } catch (error) {
+    res.status(500).json({ error: error.message || "Error fetching blog taxonomy." });
+  }
+};
+
+exports.createBlogTaxonomy = async (req, res) => {
+  try {
+    const { type, name } = req.body;
+    if (!isTaxonomyType(type)) {
+      return res.status(400).json({ error: "Type must be category or tag." });
+    }
+    if (typeof name !== "string" || !name.trim()) {
+      return res.status(400).json({ error: "Name is required." });
+    }
+
+    const taxonomy = await BlogTaxonomy.create({ type, name: name.trim() });
+    res.status(201).json({ status: "success", data: taxonomy });
+  } catch (error) {
+    if (error?.code === 11000) {
+      return res.status(409).json({ error: `This ${req.body.type} already exists.` });
+    }
+    res.status(500).json({ error: error.message || "Error creating blog taxonomy." });
+  }
+};
+
+exports.deleteBlogTaxonomy = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { type } = req.query;
+    if (!isTaxonomyType(type)) {
+      return res.status(400).json({ error: "Type must be category or tag." });
+    }
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({ error: "Invalid taxonomy id." });
+    }
+
+    const taxonomy = await BlogTaxonomy.findOne({ _id: id, type });
+    if (!taxonomy) {
+      return res.status(404).json({ error: "Blog taxonomy not found." });
+    }
+    if (await Blog.exists(blogUsageQuery(type, taxonomy.name))) {
+      return res.status(400).json({ error: `Remove ${taxonomy.name} from its blogs before deleting it.` });
+    }
+
+    await taxonomy.deleteOne();
+    res.json({ status: "success", message: "Blog taxonomy deleted." });
+  } catch (error) {
+    res.status(500).json({ error: error.message || "Error deleting blog taxonomy." });
+  }
+};
 
 exports.getBlogs = async (req, res) => {
   try {
@@ -34,7 +109,7 @@ exports.getBlogs = async (req, res) => {
 
 exports.createBlog = async (req, res) => {
   try {
-    const { title, image, text, status, meta_name, meta_tags, meta_title, meta_description, author, url, seo } = req.body;
+    const { title, image, text, status, meta_name, meta_tags, meta_title, meta_description, author, category, tags, url, seo } = req.body;
 
     if (!title || !image || !text) {
       return res.status(400).json({ error: "Title, image, and text are required." });
@@ -55,6 +130,8 @@ exports.createBlog = async (req, res) => {
       meta_title,
       meta_description,
       author,
+      category,
+      tags,
       seo,
     });
 
@@ -92,8 +169,8 @@ exports.updateBlog = async (req, res) => {
       return res.status(404).json({ error: "Blog not found." });
     }
 
-    const { title, url, image, text, status, meta_name, meta_tags, meta_title, meta_description, author, seo } = req.body;
-    const update = { title, image, text, status, meta_name, meta_tags, meta_title, meta_description, author };
+    const { title, url, image, text, status, meta_name, meta_tags, meta_title, meta_description, author, category, tags, seo } = req.body;
+    const update = { title, image, text, status, meta_name, meta_tags, meta_title, meta_description, author, category, tags };
     if (seo !== undefined) update.seo = seo;
 
     if (url !== undefined || title !== undefined) {

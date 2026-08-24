@@ -1,6 +1,7 @@
 const path = require("path");
 const Lead = require("../model/lead.model.js");
 const Enquiry = require("../model/enquiry.model.js");
+const WebsiteContact = require("../model/website-contact.model.js");
 const ProductEnquiry = require("../model/productenquiry.model.js");
 const { createActivity } = require("../utils/activityLogger.js");
 
@@ -86,6 +87,11 @@ const logLeadActivity = (req, payload) =>
     module: "leads",
     ...payload,
   });
+
+const websiteContactFilter = {
+  subject: { $exists: true },
+  message: { $exists: true },
+};
 
 
 
@@ -474,8 +480,8 @@ module.exports.getEnquiries = async (req, res) => {
   try {
     const { page, limit, skip } = getPagination(req);
     const { total, documents } = await fetchPaginatedDocuments(
-      Enquiry,
-      {},
+      WebsiteContact,
+      websiteContactFilter,
       { skip, limit }
     );
 
@@ -500,7 +506,7 @@ module.exports.getEnquiries = async (req, res) => {
 
 module.exports.createEnquiry = async (req, res) => {
   try {
-    const enquiry = await Enquiry.create(req.body);
+    const enquiry = await WebsiteContact.create(req.body);
     const leadName = getLeadName(enquiry);
 
     await logLeadActivity(req, {
@@ -531,7 +537,7 @@ module.exports.createEnquiry = async (req, res) => {
 
 module.exports.updateEnquiry = async (req, res) => {
   try {
-    const existing = await Enquiry.findById(req.params.id).lean();
+    const existing = await WebsiteContact.findOne({ _id: req.params.id, ...websiteContactFilter }).lean();
 
     if (!existing) {
       return res.status(404).json({
@@ -541,7 +547,7 @@ module.exports.updateEnquiry = async (req, res) => {
       });
     }
 
-    const enquiry = await Enquiry.findByIdAndUpdate(req.params.id, req.body, {
+    const enquiry = await WebsiteContact.findOneAndUpdate({ _id: req.params.id, ...websiteContactFilter }, req.body, {
       new: true,
       runValidators: true,
     });
@@ -617,7 +623,7 @@ module.exports.updateEnquiry = async (req, res) => {
 
 module.exports.deleteEnquiry = async (req, res) => {
   try {
-    const enquiry = await Enquiry.findByIdAndDelete(req.params.id);
+    const enquiry = await WebsiteContact.findOneAndDelete({ _id: req.params.id, ...websiteContactFilter });
 
     if (!enquiry) {
       return res.status(404).json({
@@ -686,9 +692,9 @@ module.exports.downloadWebsiteEnquiries = async (req, res) => {
   try {
     await exportDocumentsToExcel(
       res,
-      Enquiry,
-      {},
-      "Website-Enquiries.xlsx"
+      WebsiteContact,
+      websiteContactFilter,
+      "Contact-Enquiries.xlsx"
     );
     await logLeadActivity(req, {
       title: "Leads Exported",

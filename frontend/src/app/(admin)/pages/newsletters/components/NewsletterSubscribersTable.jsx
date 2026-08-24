@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Badge, Card, Form, InputGroup, Pagination } from 'react-bootstrap'
+import { Card, Form, InputGroup, Pagination } from 'react-bootstrap'
 import IconifyIcon from '@/components/wrappers/IconifyIcon'
 import useNewsletterSubscribersStore from '@/store/newsletterSubscribersStore'
 import {
@@ -10,11 +10,6 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table'
-
-const statusVariant = {
-  active: 'success',
-  unsubscribed: 'secondary',
-}
 
 const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : '-')
 
@@ -37,32 +32,6 @@ const NewsletterSubscribersTable = () => {
         accessorKey: 'source',
         header: 'Source',
         cell: ({ getValue }) => <span className="text-capitalize">{getValue() || '-'}</span>,
-      },
-      {
-        accessorKey: 'status',
-        header: 'Status',
-        cell: ({ getValue }) => {
-          const value = getValue() || 'active'
-          return (
-            <Badge bg={statusVariant[value] || 'secondary'} className="text-capitalize">
-              {value}
-            </Badge>
-          )
-        },
-      },
-      {
-        accessorKey: 'ipAddress',
-        header: 'IP Address',
-        cell: ({ getValue }) => getValue() || '-',
-      },
-      {
-        accessorKey: 'userAgent',
-        header: 'User Agent',
-        cell: ({ getValue }) => (
-          <span className="d-inline-block text-truncate" style={{ maxWidth: 260 }}>
-            {getValue() || '-'}
-          </span>
-        ),
       },
       {
         accessorKey: 'createdAt',

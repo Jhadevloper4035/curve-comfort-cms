@@ -12,6 +12,7 @@ const SelectFormInput = ({
   labelClassName,
   noValidate,
   options,
+  isMulti = false,
   ...other
 }) => {
   return <Controller control={control} name={name} render={({
@@ -22,7 +23,7 @@ const SelectFormInput = ({
                 {label}
               </FormLabel> : <>{label}</>)}
           {/* @ts-ignore */}
-          <ReactSelect {...other} {...field} options={options} onChange={e => field.onChange(e.value)} value={Array.isArray(options) && options?.find(op => 'value' in op && op.value == field.value)} classNamePrefix="react-select" id={id ?? name} />
+          <ReactSelect {...other} {...field} isMulti={isMulti} options={options} onChange={option => field.onChange(isMulti ? option?.map(item => item.value) || [] : option?.value ?? '')} value={Array.isArray(options) && (isMulti ? options.filter(option => field.value?.includes(option.value)) : options.find(option => 'value' in option && option.value == field.value))} classNamePrefix="react-select" id={id ?? name} />
           {!noValidate && fieldState.error?.message && <Feedback type="invalid">{fieldState.error?.message}</Feedback>}
         </div>} />;
 };

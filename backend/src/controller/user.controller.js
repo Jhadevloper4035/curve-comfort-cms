@@ -345,7 +345,10 @@ exports.getUserDetails = async (req, res) => {
 
   try {
     const [user, orders] = await Promise.all([
-      User.findById(req.params.id).select(publicSelect),
+      User.findById(req.params.id)
+        .select(publicSelect)
+        .populate({ path: "cartItems.product", match: { isActive: true, isDeleted: false }, select: "title slug basePrice currency inStock stock" })
+        .populate({ path: "wishlistItems", match: { isActive: true, isDeleted: false }, select: "title slug basePrice currency inStock stock" }),
       Order.find({ user: req.params.id })
         .select("orderNumber items addressSnapshot pricing status paymentStatus paymentMethod createdAt")
         .sort({ createdAt: -1 }),
@@ -353,9 +356,12 @@ exports.getUserDetails = async (req, res) => {
 
     if (!user) return res.status(404).json({ success: false, message: "User not found." });
 
+    const cartItems = user.cartItems.filter((item) => item.product?._id);
+    const wishlistItems = user.wishlistItems.filter((item) => item?._id);
+
     return res.status(200).json({
       success: true,
-      data: { user: userPayload(user), orders },
+      data: { user: userPayload(user), orders, cartItems, wishlistItems },
     });
   } catch (error) {
     console.error("Get user details error:", error);

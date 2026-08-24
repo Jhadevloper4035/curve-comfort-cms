@@ -22,7 +22,6 @@ const getPagination = (req) => {
 
 const buildFilter = (query) => {
   const filter = {};
-  if (query.status) filter.status = query.status;
   if (query.source) filter.source = query.source;
   return filter;
 };
@@ -41,11 +40,10 @@ exports.subscribeNewsletter = async (req, res) => {
     const subscriber = await NewsletterSubscriber.findOneAndUpdate(
       { email },
       {
-        email,
-        source: req.body.source || "footer",
-        status: "active",
-        ipAddress: req.ip,
-        userAgent: req.get("user-agent"),
+        $setOnInsert: {
+          email,
+          source: req.body.source || "popup",
+        },
       },
       {
         new: true,
