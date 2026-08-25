@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Card, CardBody, Col, Row, Spinner, Badge } from 'react-bootstrap';
+import { Card, CardBody, Col, Row, Spinner, Badge, Form } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import PageBreadcrumb from '@/components/layout/PageBreadcrumb';
 import PageMetaData from '@/components/PageTitle';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
 import useBlogStore from '@/store/blogStore';
+import useBlogTaxonomyStore from '@/store/blogTaxonomyStore';
 
 const imageSrc = (value) => {
   if (!value) return '';
@@ -41,6 +42,12 @@ const BlogCard = ({ blog }) => (
             <span className="text-muted fs-12">{blog.author}</span>
           )}
         </div>
+        {(blog.category || blog.tags?.length > 0) && (
+          <div className="d-flex gap-1 flex-wrap mt-2">
+            {blog.category && <Badge bg="primary" className="fw-normal">{blog.category}</Badge>}
+            {blog.tags?.map((tag) => <Badge key={tag} bg="light" text="dark" className="fw-normal">{tag}</Badge>)}
+          </div>
+        )}
       </CardBody>
       <div className="border-top p-2 d-flex gap-1">
         <Link
@@ -73,11 +80,19 @@ const BlogCard = ({ blog }) => (
 
 const Blogs = () => {
   const { blogs, loading, fetchBlogs } = useBlogStore();
+  const { items: taxonomyItems, fetchTaxonomies } = useBlogTaxonomyStore();
   const [search, setSearch] = useState('');
+  const [category, setCategory] = useState('');
+  const [tag, setTag] = useState('');
 
   useEffect(() => {
-    fetchBlogs();
-  }, [fetchBlogs]);
+    fetchTaxonomies('category');
+    fetchTaxonomies('tag');
+  }, [fetchTaxonomies]);
+
+  useEffect(() => {
+    fetchBlogs({ category, tag });
+  }, [category, fetchBlogs, tag]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return blogs;
@@ -98,7 +113,7 @@ const Blogs = () => {
 
       <Card className="mb-3">
         <CardBody>
-          <div className="d-flex flex-wrap justify-content-between gap-3">
+          <div className="d-flex flex-wrap justify-content-between gap-3 align-items-center">
             <div className="search-bar">
               <span><IconifyIcon icon="bx:search-alt" className="mb-1" /></span>
               <input
@@ -108,6 +123,16 @@ const Blogs = () => {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
+            </div>
+            <div className="d-flex flex-wrap gap-2">
+              <Form.Select aria-label="Filter by category" value={category} onChange={(e) => setCategory(e.target.value)} style={{ minWidth: 180 }}>
+                <option value="">All categories</option>
+                {taxonomyItems.category.map((item) => <option key={item._id} value={item.name}>{item.name}</option>)}
+              </Form.Select>
+              <Form.Select aria-label="Filter by tag" value={tag} onChange={(e) => setTag(e.target.value)} style={{ minWidth: 180 }}>
+                <option value="">All tags</option>
+                {taxonomyItems.tag.map((item) => <option key={item._id} value={item.name}>{item.name}</option>)}
+              </Form.Select>
             </div>
             <Link to="/blogs/create" className="btn btn-primary d-flex align-items-center">
               <IconifyIcon icon="bx:plus" className="me-1" />

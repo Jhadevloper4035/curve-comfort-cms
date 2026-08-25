@@ -90,8 +90,14 @@ exports.getBlogs = async (req, res) => {
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 60;
     const skip = (page - 1) * limit;
+    const category = req.query.category?.trim();
+    const tag = req.query.tag?.trim();
+    const filter = {
+      ...(category && { category }),
+      ...(tag && { tags: tag }),
+    };
 
-    const blogs = await Blog.find({})
+    const blogs = await Blog.find(filter)
       .sort({ created_at: -1 })
       .skip(skip)
       .limit(limit);

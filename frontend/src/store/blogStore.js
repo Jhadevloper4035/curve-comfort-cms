@@ -11,18 +11,22 @@ const useBlogStore = create(
       loading: false,
       error: null,
       lastFetched: null,
+      lastFilter: "",
 
-      fetchBlogs: async (force = false) => {
-        const { blogs, lastFetched } = get();
+      fetchBlogs: async ({ category = "", tag = "" } = {}, force = false) => {
+        const filter = new URLSearchParams(
+          Object.entries({ category, tag }).filter(([, value]) => value)
+        ).toString();
+        const { blogs, lastFetched, lastFilter } = get();
         const isStale = !lastFetched || Date.now() - lastFetched > 5 * 60 * 1000;
-        if (!force && blogs.length > 0 && !isStale) return;
+        if (!force && filter === lastFilter && blogs.length > 0 && !isStale) return;
 
         set({ loading: true, error: null }, false, "fetchBlogs/start");
         try {
-          const data = await apiFetch("/api/blog", {
+          const data = await apiFetch(`/api/blog${filter ? `?${filter}` : ""}`, {
             headers: { "x-admin-secret": import.meta.env.VITE_ADMIN_SECRET },
           });
-          set({ blogs: data?.data || data, loading: false, lastFetched: Date.now() }, false, "fetchBlogs/success");
+          set({ blogs: data?.data || data, loading: false, lastFetched: Date.now(), lastFilter: filter }, false, "fetchBlogs/success");
         } catch (err) {
           const message = err.message || "Failed to load blogs";
           set({ error: message, loading: false }, false, "fetchBlogs/error");
@@ -100,7 +104,7 @@ const useBlogStore = create(
         }
       },
 
-      resetBlogs: () => set({ blogs: [], lastFetched: null }, false, "resetBlogs"),
+      resetBlogs: () => set({ blogs: [], lastFetched: null, lastFilter: "" }, false, "resetBlogs"),
     }),
     { name: "BlogStore" }
   )
