@@ -20,6 +20,7 @@ const EcommerceProductCreate = lazy(() => import('@/app/(admin)/ecommerce/produc
 const EcommerceProductEdit = lazy(() => import('@/app/(admin)/ecommerce/products/[productId]/edit/page'))
 const EcommerceInventory = lazy(() => import('@/app/(admin)/ecommerce/inventory/page'))
 const EcommerceCategories = lazy(() => import('@/app/(admin)/ecommerce/categories/page'))
+const Monitoring = lazy(() => import('@/app/(admin)/monitoring/page'))
 
 // SEO Meta Routes
 const SeoMetaList = lazy(() => import('@/app/(admin)/seo-meta/page'))
@@ -91,6 +92,13 @@ const generalRoutes = [
 ]
 
 const appsRoutes = [
+  {
+    name: 'Monitoring',
+    path: '/admin/monitoring',
+    element: <Monitoring />,
+    roles: ['admin', 'superadmin'],
+    permissions: ['products.manage'],
+  },
   {
     name: 'Order Details',
     path: '/ecommerce/orders/:orderId',

@@ -96,6 +96,14 @@ export const MENU_ITEMS = [
     permissions: ['products.manage'],
   },
   {
+    key: 'monitoring',
+    icon: 'bx:line-chart',
+    label: 'Monitoring',
+    url: '/admin/monitoring',
+    roles: ['admin', 'superadmin'],
+    permissions: ['products.manage'],
+  },
+  {
     key: 'blogs',
     icon: 'iconamoon:edit-duotone',
     label: 'Blogs',
