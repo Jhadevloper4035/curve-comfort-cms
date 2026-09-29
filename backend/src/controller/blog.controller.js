@@ -4,6 +4,27 @@ const mongoose = require("mongoose");
 const slugify = require("slugify");
 const { createActivity } = require("../utils/activityLogger.js");
 
+const escapeRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const blogFilter = (query = {}) => {
+  const category = query.category?.trim();
+  const tag = query.tag?.trim();
+  const status = query.status?.trim();
+  const search = query.q?.trim();
+  const filter = {
+    ...(category && { category }),
+    ...(tag && { tags: tag }),
+    ...(["active", "inactive"].includes(status) && { status }),
+  };
+
+  if (search) {
+    const term = new RegExp(escapeRegex(search), "i");
+    filter.$or = [{ title: term }, { url: term }, { author: term }, { meta_tags: term }];
+  }
+
+  return filter;
+};
+
 const actorName = (req) => req.user?.name || "Admin User";
 const blogName = (blog = {}) => blog.title || blog.url || blog._id?.toString?.() || "blog";
 const logBlogActivity = (req, payload) =>
@@ -90,12 +111,7 @@ exports.getBlogs = async (req, res) => {
     const page = parseInt(req.query.page, 10) || 1;
     const limit = parseInt(req.query.limit, 10) || 60;
     const skip = (page - 1) * limit;
-    const category = req.query.category?.trim();
-    const tag = req.query.tag?.trim();
-    const filter = {
-      ...(category && { category }),
-      ...(tag && { tags: tag }),
-    };
+    const filter = blogFilter(req.query);
 
     const blogs = await Blog.find(filter)
       .sort({ created_at: -1 })
@@ -112,6 +128,8 @@ exports.getBlogs = async (req, res) => {
     res.status(500).json({ error: "An error occurred while fetching blogs." });
   }
 };
+
+exports.blogFilter = blogFilter;
 
 exports.createBlog = async (req, res) => {
   try {

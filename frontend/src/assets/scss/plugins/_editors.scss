@@ -87,6 +87,22 @@
     }
 }
 
+html[data-bs-theme='dark'] .ql-snow {
+    .ql-stroke,
+    .ql-script,
+    .ql-strike svg {
+        stroke: var(--#{$prefix}body-color);
+    }
+
+    .ql-fill {
+        fill: var(--#{$prefix}body-color);
+    }
+
+    .ql-picker {
+        color: var(--#{$prefix}body-color);
+    }
+}
+
 .ql-snow {
     .ql-picker-options {
         background-color: $card-bg;

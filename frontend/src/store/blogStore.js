@@ -13,9 +13,9 @@ const useBlogStore = create(
       lastFetched: null,
       lastFilter: "",
 
-      fetchBlogs: async ({ category = "", tag = "" } = {}, force = false) => {
+      fetchBlogs: async ({ q = "", category = "", tag = "", status = "" } = {}, force = false) => {
         const filter = new URLSearchParams(
-          Object.entries({ category, tag }).filter(([, value]) => value)
+          Object.entries({ q, category, tag, status }).filter(([, value]) => value)
         ).toString();
         const { blogs, lastFetched, lastFilter } = get();
         const isStale = !lastFetched || Date.now() - lastFetched > 5 * 60 * 1000;

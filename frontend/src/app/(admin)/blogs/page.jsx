@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardBody, Col, Row, Spinner, Badge, Form } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 import PageBreadcrumb from '@/components/layout/PageBreadcrumb';
@@ -84,6 +84,7 @@ const Blogs = () => {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
   const [tag, setTag] = useState('');
+  const [status, setStatus] = useState('');
 
   useEffect(() => {
     fetchTaxonomies('category');
@@ -91,20 +92,17 @@ const Blogs = () => {
   }, [fetchTaxonomies]);
 
   useEffect(() => {
-    fetchBlogs({ category, tag });
-  }, [category, fetchBlogs, tag]);
+    const timeout = setTimeout(() => fetchBlogs({ q: search, category, tag, status }), search ? 250 : 0);
+    return () => clearTimeout(timeout);
+  }, [category, fetchBlogs, search, status, tag]);
 
-  const filtered = useMemo(() => {
-    if (!search.trim()) return blogs;
-    const q = search.toLowerCase();
-    return blogs.filter(
-      (b) =>
-        b.title?.toLowerCase().includes(q) ||
-        b.url?.toLowerCase().includes(q) ||
-        b.author?.toLowerCase().includes(q) ||
-        b.meta_tags?.toLowerCase().includes(q)
-    );
-  }, [blogs, search]);
+  const hasFilters = Boolean(search || category || tag || status);
+  const clearFilters = () => {
+    setSearch('');
+    setCategory('');
+    setTag('');
+    setStatus('');
+  };
 
   return (
     <>
@@ -113,32 +111,53 @@ const Blogs = () => {
 
       <Card className="mb-3">
         <CardBody>
-          <div className="d-flex flex-wrap justify-content-between gap-3 align-items-center">
-            <div className="search-bar">
-              <span><IconifyIcon icon="bx:search-alt" className="mb-1" /></span>
-              <input
-                type="search"
-                className="form-control"
-                placeholder="Search blogs..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-            <div className="d-flex flex-wrap gap-2">
-              <Form.Select aria-label="Filter by category" value={category} onChange={(e) => setCategory(e.target.value)} style={{ minWidth: 180 }}>
-                <option value="">All categories</option>
-                {taxonomyItems.category.map((item) => <option key={item._id} value={item.name}>{item.name}</option>)}
-              </Form.Select>
-              <Form.Select aria-label="Filter by tag" value={tag} onChange={(e) => setTag(e.target.value)} style={{ minWidth: 180 }}>
-                <option value="">All tags</option>
-                {taxonomyItems.tag.map((item) => <option key={item._id} value={item.name}>{item.name}</option>)}
-              </Form.Select>
+          <div className="d-flex flex-wrap justify-content-between gap-2 align-items-center mb-3">
+            <div>
+              <h5 className="mb-1">Find blogs</h5>
+              <p className="text-muted mb-0">Search by title, URL, author, or SEO keywords.</p>
             </div>
             <Link to="/blogs/create" className="btn btn-primary d-flex align-items-center">
               <IconifyIcon icon="bx:plus" className="me-1" />
               Add Blog
             </Link>
           </div>
+          <Row className="g-2 align-items-end">
+            <Col lg={4} md={6}>
+              <Form.Label>Search</Form.Label>
+              <div className="search-bar w-100">
+                <span><IconifyIcon icon="bx:search-alt" className="mb-1" /></span>
+                <input type="search" className="form-control" placeholder="Title, URL, author, keywords..." value={search} onChange={(event) => setSearch(event.target.value)} />
+              </div>
+            </Col>
+            <Col lg={2} md={6}>
+              <Form.Label>Category</Form.Label>
+              <Form.Select value={category} onChange={(event) => setCategory(event.target.value)}>
+                <option value="">All categories</option>
+                {taxonomyItems.category.map((item) => <option key={item._id} value={item.name}>{item.name}</option>)}
+              </Form.Select>
+            </Col>
+            <Col lg={2} md={6}>
+              <Form.Label>Tag</Form.Label>
+              <Form.Select value={tag} onChange={(event) => setTag(event.target.value)}>
+                <option value="">All tags</option>
+                {taxonomyItems.tag.map((item) => <option key={item._id} value={item.name}>{item.name}</option>)}
+              </Form.Select>
+            </Col>
+            <Col lg={2} md={6}>
+              <Form.Label>Status</Form.Label>
+              <Form.Select value={status} onChange={(event) => setStatus(event.target.value)}>
+                <option value="">All statuses</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </Form.Select>
+            </Col>
+            <Col lg={2} md={6}>
+              <button type="button" className="btn btn-outline-secondary w-100" onClick={clearFilters} disabled={!hasFilters}>
+                <IconifyIcon icon="bx:reset" className="me-1" />
+                Clear filters
+              </button>
+            </Col>
+          </Row>
         </CardBody>
       </Card>
 
@@ -146,11 +165,11 @@ const Blogs = () => {
         <div className="text-center py-5">
           <Spinner animation="border" size="sm" />
         </div>
-      ) : filtered.length === 0 ? (
+      ) : blogs.length === 0 ? (
         <div className="text-center text-muted py-5">No blogs found</div>
       ) : (
         <Row className="g-3">
-          {filtered.map((blog) => (
+          {blogs.map((blog) => (
             <BlogCard key={blog._id} blog={blog} />
           ))}
         </Row>
