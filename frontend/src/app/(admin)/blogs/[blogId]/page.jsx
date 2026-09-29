@@ -119,8 +119,7 @@ const BlogDetail = () => {
               <h6 className="text-muted mb-3">Content Preview</h6>
               {blog.text ? (
                 <div
-                  className="p-3 bg-light rounded fs-14 ql-editor"
-                  style={{ maxHeight: 400, overflowY: 'auto' }}
+                  className="p-3 bg-light rounded fs-14 ql-editor blog-article-content"
                   dangerouslySetInnerHTML={{ __html: blog.text }}
                 />
               ) : (

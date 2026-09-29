@@ -2,7 +2,7 @@
 // editors.scss
 //
 
-.ql-editor {
+.ql-container .ql-editor {
     text-align: left;
     min-height: 500px;
 
@@ -16,6 +16,42 @@
         margin-left: -1.5em;
         margin-right: 0.3em;
         text-align: right;
+    }
+}
+
+.blog-article-content.ql-editor {
+    padding: 0;
+    line-height: 1.7;
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    p,
+    ol,
+    ul,
+    blockquote,
+    pre {
+        margin-bottom: 1rem;
+    }
+
+    img {
+        display: block;
+        max-width: 100%;
+        height: auto;
+        margin: 1rem auto;
+    }
+
+    .ql-align-left img {
+        margin-left: 0;
+        margin-right: auto;
+    }
+
+    .ql-align-right img {
+        margin-left: auto;
+        margin-right: 0;
     }
 }
 
