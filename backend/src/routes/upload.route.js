@@ -5,6 +5,7 @@ const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const { PutObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 const s3Client = require("../config/s3");
 const { createActivity } = require("../utils/activityLogger.js");
+const { copyDropboxImage } = require("../utils/dropboxImage.js");
 
 const BUCKET = process.env.S3_BUCKET;
 const REGION = process.env.AWS_REGION;
@@ -37,6 +38,24 @@ const logUploadActivity = (req, payload) =>
         module: "uploads",
         ...payload,
     });
+
+router.post("/import-dropbox-image", async (req, res) => {
+    try {
+        const url = await copyDropboxImage(req.body?.url);
+        await logUploadActivity(req, {
+            title: "Dropbox Image Imported",
+            description: `${actorName(req)} copied a Dropbox image to product storage`,
+            action: "DROPBOX_IMAGE_IMPORTED",
+            targetName: "products/dropbox",
+            status: "completed",
+            badge: "Upload",
+            iconType: "success",
+        });
+        res.json({ url });
+    } catch (err) {
+        res.status(400).json({ error: err.message || "Unable to import Dropbox image" });
+    }
+});
 
 // Single presign
 router.post("/presign", async (req, res) => {

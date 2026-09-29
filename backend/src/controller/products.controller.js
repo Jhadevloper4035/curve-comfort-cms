@@ -1,7 +1,10 @@
 const Product = require("../model/product.model.js");
+const Category = require("../model/category.model.js");
 const slugify = require("slugify");
+const XLSX = require("xlsx");
 const { sendExcelDownload } = require("../utils/excel.js");
 const { createActivity } = require("../utils/activityLogger.js");
+const { copyDropboxImage, isDropboxUrl } = require("../utils/dropboxImage.js");
 
 const actorName = (req) => req.user?.name || "Admin User";
 const getProductName = (product = {}) =>
@@ -39,6 +42,32 @@ const formatProductForExport = (product) => ({
   "PDF URL": product.pdfUrlPath || "",
   "Created At": product.createdAt ? new Date(product.createdAt).toISOString() : "",
   "Updated At": product.updatedAt ? new Date(product.updatedAt).toISOString() : "",
+});
+
+const formatProductForBulkUpdate = (product) => ({
+  "Product ID": product._id.toString(),
+  Title: product.title || "",
+  Description: product.description || "",
+  "Base Price": product.basePrice ?? "",
+  Category: product.category?.name || product.category?.slug || product.category || "",
+  Images: Array.isArray(product.images) ? product.images.join("|") : "",
+  Slug: product.slug || "",
+  Stock: product.stock ?? 0,
+  Currency: product.currency || "INR",
+  Subcategories: Array.isArray(product.subcategories)
+    ? product.subcategories.map((item) => item?.name || item?.slug || item).join("|")
+    : "",
+  Tags: Array.isArray(product.tags) ? product.tags.join("|") : "",
+  "Care Instructions": Array.isArray(product.careInstructions) ? product.careInstructions.join("|") : "",
+  Warranty: product.warranty || "",
+  "Is Active": product.isActive ? "true" : "false",
+  "Assembly Required": product.assemblyRequired ? "true" : "false",
+  "Dimension Length": product.dimensions?.length ?? "",
+  "Dimension Width": product.dimensions?.width ?? "",
+  "Dimension Height": product.dimensions?.height ?? "",
+  "Dimension Unit": product.dimensions?.unit || "cm",
+  Weight: product.weight?.value ?? "",
+  "Weight Unit": product.weight?.unit || "kg",
 });
 
 const PRODUCT_FIELDS = [
@@ -131,6 +160,141 @@ const productPayload = (body, { requireFields = false } = {}) => {
   return payload;
 };
 
+
+const csvValue = (row, column) => row[column.replace(/[^a-z0-9]/gi, "").toLowerCase()];
+
+const csvList = (value) =>
+  String(value || "")
+    .split("|")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const csvNumber = (value, field, rowNumber, { required = false } = {}) => {
+  if (value === "" || value === undefined) {
+    if (required) throw new Error("Row " + rowNumber + ": " + field + " is required.");
+    return undefined;
+  }
+
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < 0) throw new Error("Row " + rowNumber + ": " + field + " must be a non-negative number.");
+  return number;
+};
+
+const csvBoolean = (value, fallback, field, rowNumber) => {
+  if (value === "" || value === undefined) return fallback;
+  const normalized = String(value).trim().toLowerCase();
+  if (["true", "yes", "1"].includes(normalized)) return true;
+  if (["false", "no", "0"].includes(normalized)) return false;
+  throw new Error("Row " + rowNumber + ": " + field + " must be true or false.");
+};
+
+const normalizeCsvRow = (row) =>
+  Object.fromEntries(
+    Object.entries(row).map(([key, value]) => [key.replace(/[^a-z0-9]/gi, "").toLowerCase(), value])
+  );
+
+const parseProductCsv = (csv) => {
+  if (typeof csv !== "string" || !csv.trim()) throw new Error("Choose a non-empty CSV file.");
+  if (Buffer.byteLength(csv, "utf8") > 1_000_000) throw new Error("CSV files must be 1 MB or smaller.");
+
+  const workbook = XLSX.read(csv, { type: "string", raw: false });
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  const rows = sheet ? XLSX.utils.sheet_to_json(sheet, { defval: "", raw: false }) : [];
+
+  if (!rows.length) throw new Error("The CSV file has no product rows.");
+  if (rows.length > 500) throw new Error("Import up to 500 products per CSV file.");
+  return rows.map(normalizeCsvRow);
+};
+
+const parseProductFile = ({ csv, file } = {}) => {
+  if (csv !== undefined) return parseProductCsv(csv);
+  if (typeof file !== "string" || !file.trim()) throw new Error("Choose a non-empty Excel or CSV file.");
+
+  const buffer = Buffer.from(file, "base64");
+  if (!buffer.length || buffer.length > 1_000_000) throw new Error("Excel files must be 1 MB or smaller.");
+
+  const workbook = XLSX.read(buffer, { type: "buffer", raw: false });
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  const rows = sheet ? XLSX.utils.sheet_to_json(sheet, { defval: "", raw: false }) : [];
+
+  if (!rows.length) throw new Error("The Excel file has no product rows.");
+  if (rows.length > 500) throw new Error("Import up to 500 products per file.");
+  return rows.map(normalizeCsvRow);
+};
+
+const categoryLookup = async () => {
+  const categories = await Category.find({ isDeleted: false }).select("_id name slug path").lean();
+  const lookup = new Map();
+
+  const addAlias = (alias, id) => {
+    const key = String(alias || "").trim().toLowerCase();
+    if (!key) return;
+    const current = lookup.get(key);
+    lookup.set(key, lookup.has(key) && current !== id ? null : id);
+  };
+
+  categories.forEach((category) => {
+    const id = category._id.toString();
+    [id, category.name, category.slug, category.path].forEach((alias) => addAlias(alias, id));
+  });
+
+  return (value, field, rowNumber) => {
+    const id = lookup.get(String(value || "").trim().toLowerCase());
+    if (!id) throw new Error("Row " + rowNumber + ": " + field + " must match an existing category name, slug, path, or ID.");
+    return id;
+  };
+};
+
+const productFromCsvRow = (row, resolveCategory, rowNumber) => {
+  const title = String(csvValue(row, "title") || "").trim();
+  const description = String(csvValue(row, "description") || "").trim();
+  const category = csvValue(row, "category");
+  const images = csvList(csvValue(row, "images") || csvValue(row, "imageurl"));
+
+  if (!title || !description || !category || !images.length) {
+    throw new Error("Row " + rowNumber + ": title, description, category, and images are required.");
+  }
+
+  return productPayload({
+    title,
+    slug: String(csvValue(row, "slug") || "").trim(),
+    description,
+    basePrice: csvNumber(csvValue(row, "baseprice"), "basePrice", rowNumber, { required: true }),
+    currency: String(csvValue(row, "currency") || "INR").trim().toUpperCase(),
+    stock: csvNumber(csvValue(row, "stock"), "stock", rowNumber) ?? 0,
+    images,
+    category: resolveCategory(category, "category", rowNumber),
+    subcategories: csvList(csvValue(row, "subcategories")).map((value) => resolveCategory(value, "subcategories", rowNumber)),
+    tags: csvList(csvValue(row, "tags")),
+    careInstructions: csvList(csvValue(row, "careinstructions")),
+    warranty: String(csvValue(row, "warranty") || "").trim(),
+    isActive: csvBoolean(csvValue(row, "isactive"), true, "isActive", rowNumber),
+    assemblyRequired: csvBoolean(csvValue(row, "assemblyrequired"), false, "assemblyRequired", rowNumber),
+    dimensions: {
+      length: csvNumber(csvValue(row, "dimensionlength"), "dimensionLength", rowNumber),
+      width: csvNumber(csvValue(row, "dimensionwidth"), "dimensionWidth", rowNumber),
+      height: csvNumber(csvValue(row, "dimensionheight"), "dimensionHeight", rowNumber),
+      unit: String(csvValue(row, "dimensionunit") || "cm").trim(),
+    },
+    weight: {
+      value: csvNumber(csvValue(row, "weight"), "weight", rowNumber),
+      unit: String(csvValue(row, "weightunit") || "kg").trim(),
+    },
+  }, { requireFields: true });
+};
+
+const copyDropboxImages = async (images, rowNumber) => {
+  const copied = [];
+  for (const image of images) {
+    try {
+      copied.push(isDropboxUrl(image) ? await copyDropboxImage(image) : image);
+    } catch (error) {
+      throw new Error("Row " + rowNumber + ": " + error.message);
+    }
+  }
+  return copied;
+};
+
 exports.getProducts = async (req, res) => {
   try {
     const page = parseInt(req.query.page, 10) || 1;
@@ -188,6 +352,22 @@ exports.downloadProducts = async (req, res) => {
   }
 };
 
+exports.downloadBulkUpdateTemplate = async (req, res) => {
+  try {
+    const products = await Product.find({ isDeleted: { $ne: true } })
+      .populate("category", "name slug path")
+      .populate("subcategories", "name slug path")
+      .sort({ createdAt: -1 })
+      .select("-__v -searchText")
+      .lean();
+
+    sendExcelDownload(res, products.map(formatProductForBulkUpdate), "Product-bulk-update.xlsx");
+  } catch (error) {
+    console.error("Error preparing product bulk-update template:", error);
+    res.status(500).json({ success: false, message: "Error preparing product bulk-update template" });
+  }
+};
+
 exports.createProduct = async (req, res) => {
   try {
     const product = new Product(productPayload(req.body, { requireFields: true }));
@@ -219,6 +399,75 @@ exports.createProduct = async (req, res) => {
     res.status(error.statusCode || 500).json({ error: error.message || "An error occurred while creating the product." });
   }
 };
+
+
+exports.importProducts = async (req, res) => {
+  try {
+    const rows = parseProductFile(req.body);
+    const resolveCategory = await categoryLookup();
+    const items = [];
+    // ponytail: copies are sequential to avoid overwhelming Dropbox or S3; add bounded concurrency only if imports become slow.
+    for (const [index, row] of rows.entries()) {
+      const product = productFromCsvRow(row, resolveCategory, index + 2);
+      product.images = await copyDropboxImages(product.images, index + 2);
+      items.push({ id: String(csvValue(row, "productid") || csvValue(row, "id") || "").trim(), product });
+    }
+    const products = items.map((item) => item.product);
+    const slugs = products.map((product) => product.slug);
+    const ids = items.map((item) => item.id).filter(Boolean);
+
+    if (new Set(slugs).size !== slugs.length || new Set(ids).size !== ids.length) {
+      return res.status(400).json({ error: "CSV contains duplicate product titles or slugs." });
+    }
+
+    const [existingBySlug, existingById] = await Promise.all([
+      Product.find({ slug: { $in: slugs }, isDeleted: { $ne: true } }).select("_id slug").lean(),
+      ids.length ? Product.find({ _id: { $in: ids }, isDeleted: { $ne: true } }).lean() : [],
+    ]);
+    const productsById = new Map(existingById.map((product) => [product._id.toString(), product]));
+    const unknownIds = ids.filter((id) => !productsById.has(id));
+    if (unknownIds.length) {
+      return res.status(404).json({ error: "Products not found for IDs: " + unknownIds.join(", ") + "." });
+    }
+
+    const conflictingSlugs = existingBySlug.filter((product) => {
+      const item = items.find((entry) => entry.product.slug === product.slug);
+      return !item.id || item.id !== product._id.toString();
+    });
+    if (conflictingSlugs.length) {
+      return res.status(409).json({ error: "Products already exist for: " + conflictingSlugs.map((product) => product.slug).join(", ") + "." });
+    }
+
+    await Promise.all(items.map(({ id, product }) => new Product(id ? { ...productsById.get(id), ...product, _id: id } : product).validate()));
+
+    const updates = items.filter((item) => item.id);
+    const creates = items.filter((item) => !item.id).map((item) => item.product);
+    if (updates.length) {
+      await Product.bulkWrite(updates.map(({ id, product }) => ({
+        updateOne: { filter: { _id: id, isDeleted: { $ne: true } }, update: { $set: product } },
+      })), { ordered: true });
+    }
+    if (creates.length) await Product.insertMany(creates, { ordered: true });
+
+    await logProductActivity(req, {
+      title: "Products Imported",
+      description: actorName(req) + " imported " + creates.length + " products and updated " + updates.length + " products",
+      action: "PRODUCTS_IMPORTED",
+      targetName: items.length + " products",
+      status: "completed",
+      badge: "Imported",
+      iconType: "success",
+    });
+
+    res.status(201).json({ status: "success", message: creates.length + " products imported and " + updates.length + " products updated.", data: { created: creates.length, updated: updates.length } });
+  } catch (error) {
+    const statusCode = error.code === 11000 ? 409 : error.statusCode || 400;
+    res.status(statusCode).json({ error: error.message || "Unable to import products." });
+  }
+};
+
+exports.parseProductCsv = parseProductCsv;
+exports.parseProductFile = parseProductFile;
 
 exports.updateProduct = async (req, res) => {
   try {

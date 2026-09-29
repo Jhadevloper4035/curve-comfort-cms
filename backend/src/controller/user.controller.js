@@ -263,7 +263,7 @@ exports.getMe = (req, res) => {
   return res.status(200).json({
     success: true,
     status: "ok",
-    data: { user: userPayload(req.user) },
+    data: { user: req.user ? userPayload(req.user) : null },
   });
 };
 

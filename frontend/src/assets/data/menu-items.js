@@ -67,6 +67,12 @@ export const MENU_ITEMS = [
         parentKey: 'products',
       },
       {
+        key: 'products-bulk-upload',
+        label: 'Bulk Upload',
+        url: '/ecommerce/products/bulk-upload',
+        parentKey: 'products',
+      },
+      {
         key: 'products-categories',
         label: 'Categories',
         url: '/ecommerce/categories',

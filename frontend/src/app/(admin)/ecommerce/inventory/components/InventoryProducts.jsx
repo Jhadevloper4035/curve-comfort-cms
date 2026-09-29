@@ -112,10 +112,10 @@ const InventoryProducts = ({ filters }) => {
               )}
               {downloading ? 'Preparing...' : 'Export Excel'}
             </Button>
-            <Button variant="secondary">
+            <Link to="/ecommerce/products/bulk-upload" className="btn btn-secondary">
               <IconifyIcon icon="bx:import" className="me-1 icons-center" />
               Import
-            </Button>
+            </Link>
             <Link to="/ecommerce/products/create" className="btn btn-primary d-inline-flex align-items-center ms-md-auto">
               <IconifyIcon icon="bx:plus" className="me-1" />
               Add Product

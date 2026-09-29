@@ -47,6 +47,21 @@ const protect = async (req, res, next) => {
   }
 };
 
+const optionalProtect = async (req, res, next) => {
+  const token = req.cookies?.token;
+  if (!token) return next();
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id).select("-password -emailOtpHash -refreshTokens -passwordResetTokenHash");
+    if (user && !user.isBlocked) req.user = user;
+  } catch {
+    // A stale session is treated as signed out for the session probe.
+  }
+
+  return next();
+};
+
 // ── Role guard ────────────────────────────────────────────────────────────────
 // Usage: requireRole('admin', 'superadmin')
 const requireRole = (...roles) => (req, res, next) => {
@@ -98,6 +113,7 @@ const requirePermission = (...permissions) => (req, res, next) => {
 module.exports = {
   generateToken,
   protect,
+  optionalProtect,
   requireRole,
   adminOnly,
   requirePermission,

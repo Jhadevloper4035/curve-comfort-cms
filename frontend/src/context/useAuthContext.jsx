@@ -31,11 +31,19 @@ export function AuthProvider({ children }) {
   // If it is, refresh user data from the server (name, accessType may have changed).
   // If it is not, wipe the local session so the router redirects to sign-in.
   useEffect(() => {
+    if (!getSession()) {
+      setLoading(false);
+      return;
+    }
+
     apiFetch('/api/auth/me')
       .then((res) => {
         if (res.success && res.data?.user) {
           setCookie(authSessionKey, JSON.stringify(res.data.user));
           setUser(res.data.user);
+        } else {
+          deleteCookie(authSessionKey);
+          setUser(undefined);
         }
       })
       .catch(() => {

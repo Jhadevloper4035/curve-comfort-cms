@@ -17,7 +17,7 @@ const ThemeCustomizerToggle = () => {
   };
   return <>
       <div className="topbar-item d-none d-md-flex">
-        <button onClick={toggleThemeCustomizerOffcanvas} type="button" className="topbar-button">
+        <button onClick={toggleThemeCustomizerOffcanvas} type="button" className="topbar-button" aria-label="Open layout settings" title="Layout settings">
           <IconifyIcon icon="iconamoon:settings-duotone" className="fs-24 align-middle" />
         </button>
       </div>

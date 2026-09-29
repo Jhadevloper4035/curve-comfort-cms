@@ -17,6 +17,7 @@ const OrderDetails = lazy(() => import('@/app/(admin)/ecommerce/orders/[orderId]
 const CouponManagement = lazy(() => import('@/app/(admin)/ecommerce/coupons/page'))
 const EcommerceProductDetails = lazy(() => import('@/app/(admin)/ecommerce/products/[productId]/page'))
 const EcommerceProductCreate = lazy(() => import('@/app/(admin)/ecommerce/products/create/page'))
+const EcommerceProductBulkUpload = lazy(() => import('@/app/(admin)/ecommerce/products/bulk-upload/page'))
 const EcommerceProductEdit = lazy(() => import('@/app/(admin)/ecommerce/products/[productId]/edit/page'))
 const EcommerceInventory = lazy(() => import('@/app/(admin)/ecommerce/inventory/page'))
 const EcommerceCategories = lazy(() => import('@/app/(admin)/ecommerce/categories/page'))
@@ -152,6 +153,13 @@ const appsRoutes = [
     name: 'Create Product',
     path: '/ecommerce/products/create',
     element: <EcommerceProductCreate />,
+    roles: ['admin', 'superadmin', 'custom'],
+    permissions: ['products.manage'],
+  },
+  {
+    name: 'Bulk Upload Products',
+    path: '/ecommerce/products/bulk-upload',
+    element: <EcommerceProductBulkUpload />,
     roles: ['admin', 'superadmin', 'custom'],
     permissions: ['products.manage'],
   },

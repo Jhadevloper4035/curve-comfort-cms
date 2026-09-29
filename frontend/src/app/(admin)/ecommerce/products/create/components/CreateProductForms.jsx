@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Col, Row } from 'react-bootstrap';
+import { Alert, Col, Form, Row } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 import IconifyIcon from '@/components/wrappers/IconifyIcon';
@@ -26,6 +26,9 @@ const CreateProductForms = () => {
   const { createProduct } = useProductStore();
   const defaults = getProductFormDefaults();
   const [images, setImages] = useState([]);
+  const [dropboxImageUrl, setDropboxImageUrl] = useState('');
+  const [importingDropboxImage, setImportingDropboxImage] = useState(false);
+  const [dropboxError, setDropboxError] = useState('');
   const [optionPricing, setOptionPricing] = useState(defaults.optionPricing);
   const [customizationGroups, setCustomizationGroups] = useState(defaults.customizationGroups);
   const [formError, setFormError] = useState('');
@@ -41,6 +44,24 @@ const CreateProductForms = () => {
       if (result) navigate('/ecommerce/products');
     } catch (error) {
       setFormError(error.message);
+    }
+  };
+
+  const importDropboxImage = async () => {
+    setDropboxError('');
+    setImportingDropboxImage(true);
+    try {
+      const result = await apiFetch('/api/upload/import-dropbox-image', {
+        method: 'POST',
+        headers: { 'x-admin-secret': import.meta.env.VITE_ADMIN_SECRET, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: dropboxImageUrl }),
+      });
+      setImages((current) => [...current, result.url]);
+      setDropboxImageUrl('');
+    } catch (error) {
+      setDropboxError(error.message || 'Unable to import the Dropbox image.');
+    } finally {
+      setImportingDropboxImage(false);
     }
   };
 
@@ -78,6 +99,15 @@ const CreateProductForms = () => {
               onComplete={(keys) => setImages((prev) => [...prev, ...keys])}
               onRemove={(key) => setImages((prev) => prev.filter((item) => item !== key))}
             />
+            <Form.Label className="mt-3">Dropbox public image link</Form.Label>
+            <div className="d-flex gap-2">
+              <Form.Control value={dropboxImageUrl} onChange={(event) => setDropboxImageUrl(event.target.value)} placeholder="https://www.dropbox.com/..." />
+              <button type="button" className="btn btn-outline-primary text-nowrap" onClick={importDropboxImage} disabled={!dropboxImageUrl || importingDropboxImage}>
+                {importingDropboxImage ? 'Importing...' : 'Import to S3'}
+              </button>
+            </div>
+            <Form.Text className="text-muted">Set the Dropbox file to public access, then paste its share link. JPG, PNG, WebP, and AVIF images up to 5 MB are copied into this project’s S3 storage.</Form.Text>
+            {dropboxError && <div className="text-danger small mt-1">{dropboxError}</div>}
           </div>
         </Col>
         <Col md={3}>

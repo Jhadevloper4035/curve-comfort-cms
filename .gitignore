@@ -50,3 +50,6 @@ terraform.tfvars
 s3-credentials.txt
 ls.txt
 cred.txt
+
+# MindexAI
+.mindexai/
